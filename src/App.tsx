@@ -6,9 +6,9 @@ import '../node_modules/bootstrap/scss/bootstrap.scss'
 import ReactDOM from 'react-dom';
 import {useState,useEffect,useRef} from 'react'
 
-import type {State,LinkType,Position,Position4,FrameType} from './app/interfaces'
+import type {State,LinkType,Position,Position4,FrameType,EffectType,OverlayeffectTypes} from './app/interfaces'
 import {connect} from 'react-redux'
-import {graphSlice,selectionSlice} from './app/reducers';
+import {graphSlice,selectionSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
 function mapState(state:RootState){
   return {
@@ -16,9 +16,10 @@ function mapState(state:RootState){
     framesKeys: state.graphReducer.frames!.keys,
 
     links: state.graphReducer.links,
-    pseudolinks:state.graphReducer.pseudolinks,
 
-    ids: state.selectionReducer.ids
+    ids: state.selectionReducer.ids,
+
+    effects: state.overlayEffectsReducer.effects
   }
 }
 const mapDispatch = (dispatch:any)=>({ 
@@ -31,38 +32,48 @@ const mapDispatch = (dispatch:any)=>({
 
   linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
   linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))},
-  pseudolinkAdded:(id:number)=>{dispatch(graphSlice.actions.pseudolinkAdded({id:id}))},
-  pseudolinksCleared:()=>{dispatch(graphSlice.actions.pseudolinksCleared({}))},
 
   elementsSelected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsSelected({selectedIds:selectedIds}))},
   elementsDeselected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsDeselected({selectedIds:selectedIds}))},
+
+  effectSetStart:(type:OverlayeffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
+  effectSetEnd:(type:OverlayeffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
+  effectSetActive:(type:OverlayeffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
+  effectSetId:(type:OverlayeffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
+  disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))}
 });
 
-class Frame extends React.Component<{id:Readonly<number>,text:string,position:Position,size:Position,frameH:number,frameW:number,radius:number,isSelected:boolean
+class Frame extends React.Component<{id:Readonly<number>,text:string,position:Position,size:Position,frameH:number,frameW:number,radius:number,
+                                    isSelected:boolean, zIndex:number, effects:EffectType,
                                       initCallback:any,
                                       dragCallback:any,
                                       selectionCallback:any,
                                       deselectionCallback:any,
-                                      pseudolinkCallback:any,
-                                      deleteCallback:any
+                                      deleteCallback:any,
+                                      createLinkCallback:any
+                                      
+                                      effectStartCallback:any,
+                                      effectEndCallback:any,
+                                      effectSetActiveCallback:any,
+                                      effectSetIdCallback:any
                                     },
-                                    {dragging:boolean,rel:null|Position,pseudolinkPos:null|Position,pseudolinkDragging:boolean}>{
+                                    {dragging:boolean,rel:null|Position}>{
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
  contentRef = React.createRef<any>();
  constructor(props:any){
   super(props);
-  this.state = {dragging:false,rel:null,pseudolinkDragging:false,pseudolinkPos:{x:100,y:100}};
+  this.state = {dragging:false,rel:null};
  }
  componentDidMount(){
     //handle box binding
     window.addEventListener('mousemove', this.handleHandlers.onMouseMove);
-    document.addEventListener('mouseup', this.handleHandlers.onMouseUp);
+    // document.addEventListener('mouseup', this.handleHandlers.onMouseUp);
     (this.handleRef.current)!.addEventListener('mousedown', this.handleHandlers.onMouseDown);
 
     //content box binding
     window.addEventListener('mousemove', this.contentHandlers.onMouseMove);
-    document.addEventListener('mouseup', this.contentHandlers.onMouseUpDocument);
+    // document.addEventListener('mouseup', this.contentHandlers.onMouseUpDocument);
     (this.contentRef.current)!.addEventListener('mouseup', this.contentHandlers.onMouseUpElement);
     (this.contentRef.current)!.addEventListener('mousedown', this.contentHandlers.onMouseDown);
 
@@ -81,7 +92,6 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
 
   //content box unbinding
   window.removeEventListener('mousemove', this.contentHandlers.onMouseMove);
-  document.removeEventListener('mouseup', this.contentHandlers.onMouseUpDocument);
   (this.contentRef.current)!.removeEventListener('mouseup', this.contentHandlers.onMouseUpElement);
   (this.contentRef.current)!.removeEventListener('mousedown', this.contentHandlers.onMouseDown);
 
@@ -120,38 +130,28 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
  contentHandlers = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
-    this.setState({
-      pseudolinkDragging: true,
-
-      pseudolinkPos: {
-      x: e.pageX,
-      y: e.pageY
-      }
-    });
-    this.props.pseudolinkCallback(this.props.id,'start');
-    e.stopPropagation()
-    e.preventDefault()
+    this.props.effectStartCallback('pseudolinkEffect',{x: e.pageX,
+      y: e.pageY});
+    this.props.effectEndCallback('pseudolinkEffect',{x: e.pageX,
+      y: e.pageY});
+    this.props.effectSetIdCallback('pseudolinkEffect',this.props.id,'start');
+    this.props.effectSetActiveCallback('pseudolinkEffect',true); //todo: 4 actions -> 1 action
   
   },
-  onMouseUpDocument:(e:MouseEvent)=>{
-    this.setState({pseudolinkDragging: false});
-    this.props.pseudolinkCallback(this.props.id,'clear');
-    e.stopPropagation()
-    e.preventDefault()
-  },
+  // onMouseUpDocument:(e:MouseEvent)=>{
+  //   console.log('doc');
+  //   this.props.pseudolinkCallback(this.props.id,'clear');
+  //   this.setState({pseudolinkDragging: false});
+  // },
   onMouseUpElement:(e:MouseEvent)=>{
-    this.props.pseudolinkCallback(this.props.id,'end');
+    if (e.button !== 0) return;
+    this.props.effectSetActiveCallback('pseudolinkEffect',false);
+    this.props.createLinkCallback(this.props.id);
   },
   onMouseMove:(e:MouseEvent)=>{
-    if(!this.state.pseudolinkDragging) return;
-    // this.ref.current!.style.zIndex+=1;
-    this.setState({
-      pseudolinkPos: {
-      x: e.pageX,
-      y: e.pageY
-    }});
-    e.stopPropagation()
-    e.preventDefault()
+    if(!this.props.effects.data['pseudolinkEffect'].isActive) return;
+    this.props.effectEndCallback('pseudolinkEffect',{x: e.pageX,
+                                              y: e.pageY});
  }
  }
  wrapHandlers = {
@@ -169,72 +169,69 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
 
 
  render(){
-  var overlayComponents:JSX.Element[] = [<div></div>];
-  if(this.state.pseudolinkDragging){
-    overlayComponents=[
-      <svg style={{position:'absolute',overflow:'visible'}}>
-        <line x1={this.props.position.x+this.props.size.x/2} y1={this.props.position.y+this.props.size.y/2} 
-              x2={this.state.pseudolinkPos!.x} y2={this.state.pseudolinkPos!.y} style={{
+  var pseudolink:JSX.Element = 
+    <line x1={this.props.position.x+this.props.size.x/2} y1={this.props.position.y+this.props.size.y/2} 
+          x2={this.props.effects.data['pseudolinkEffect'].endPos!.x} y2={this.props.effects.data['pseudolinkEffect'].endPos!.y} style={{
           stroke:'red',
           strokeWidth:1,
           cursor:'pointer',
           zIndex:1
-        }}>
-        </line>
-      </svg>
-    ]
-  }
+    }}/>
   if(this.props.isSelected){
     return(
-      <div>
-      <div style={{minHeight:this.props.frameH,
-        width:this.props.frameW,
-        textAlign:'center',
-        position:'absolute',
-        border:'2px solid',
-        color:'red',
-         left:this.props.position.x,
-         top:this.props.position.y,
-        zIndex:'100',
-        background:'white',
-        alignItems:'center',
-        padding:6,
-        userSelect:'none'}} ref={this.wrapRef}>
-            <div style={{
-              width:'100%',
-              height:'20px',
-              backgroundColor:'black',
-              cursor:'pointer'}} ref={this.handleRef}></div>
-            <div style={{
-              width:'100%'}} ref={this.contentRef}>{this.props.text}</div>
-     </div>
-     {overlayComponents}
+      <div style={{zIndex:this.props.zIndex}}>
+        <div style={{minHeight:this.props.frameH,
+          width:this.props.frameW,
+          textAlign:'center',
+          position:'absolute',
+          border:'2px solid',
+          color:'red',
+          left:this.props.position.x,
+          top:this.props.position.y,
+          zIndex:'100',
+          background:'white',
+          alignItems:'center',
+          padding:6,
+          userSelect:'none'}} ref={this.wrapRef}>
+              <div style={{
+                width:'100%',
+                height:'20px',
+                backgroundColor:'black',
+                cursor:'pointer'}} ref={this.handleRef}></div>
+              <div style={{
+                width:'100%'}} ref={this.contentRef}>{this.props.text}</div>
+      </div>
+      <svg style={{position:'absolute',overflow:'visible'}}>
+          {this.props.effects.data['pseudolinkEffect'].isActive&&(this.props.effects.data['pseudolinkEffect'].id==this.props.id)&&pseudolink}
+      </svg>
      </div>
     );
   } else {
     return(
-      <div>
-      <div style={{minHeight:this.props.frameH,
-        width:this.props.frameW,
-        textAlign:'center',
-        position:'absolute',
-        border:'1px solid',
-        color:'black',
-         left:this.props.position.x,
-         top:this.props.position.y,
-        zIndex:'100',
-        background:'white',
-        alignItems:'center',
-        userSelect:'none'}} ref={this.wrapRef}>
-            <div style={{
-              width:'100%',
-              height:'40px',
-              backgroundColor:'black',
-              cursor:'pointer'}} ref={this.handleRef}></div>
-            <div style={{
-              width:'100%',padding:6}} ref={this.contentRef}>{this.props.text}</div>
-     </div>
-     {overlayComponents}
+      <div style={{zIndex:999}}>
+        <div style={{minHeight:this.props.frameH,
+          width:this.props.frameW,
+          textAlign:'center',
+          position:'absolute',
+          border:'1px solid',
+          color:'black',
+          left:this.props.position.x,
+          top:this.props.position.y,
+          zIndex:'100',
+          background:'white',
+          alignItems:'center',
+          userSelect:'none'}} ref={this.wrapRef}>
+              <div style={{
+                width:'100%',
+                height:'40px',
+                backgroundColor:'black',
+                cursor:'pointer'}} ref={this.handleRef}></div>
+              <div style={{
+                width:'100%',padding:6}} ref={this.contentRef}>{this.props.text}</div>
+      </div>
+      <svg style={{position:'absolute',overflow:'visible'}}>
+        {this.props.effects.data['pseudolinkEffect'].isActive&&(this.props.effects.data['pseudolinkEffect'].id==this.props.id)&&pseudolink}
+      </svg>
      </div>
     );
   }
@@ -268,7 +265,7 @@ class Line extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
   }
 }
 
-class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,deleteCallback:any,id1:number,id2:number},{offset:Position4}>{
+class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,deleteCallback:any,id1:number,id2:number,zIndex:number},{offset:Position4}>{
   ref = React.createRef<HTMLInputElement>();
   constructor(props:any){
     super(props);
@@ -279,16 +276,71 @@ class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
   }
   render(){
     return(
-      <svg style={{position:'absolute',overflow:'visible'}}>
+      <svg style={{position:'absolute',overflow:'visible',zIndex:this.props.zIndex}}>
         <Line x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} 
           deleteCallback={this.props.deleteCallback} id1={this.props.id1} id2={this.props.id2}/>
       </svg>
     );
   }
 }
+class Clickbox extends React.Component<{zIndex:number,disableAllEffectsCallback:any}>{
+  selectionBoxRef = React.createRef<HTMLDivElement>();
+  clickboxRef = React.createRef<HTMLDivElement>();
+  constructor(props:any){
+    super(props);
+  }
+  clickboxHandlers={
+    onMouseDown:(e:MouseEvent)=>{
+      if (e.button !== 0) return;
+      this.setState({selectionBoxActive:true});
+      this.setState({
+        selectionBoxStart: {
+        x: e.pageX,
+        y: e.pageY
+      }});
+    },
+    onMouseUp:(e:MouseEvent)=>{
+      this.props.disableAllEffectsCallback();
+    },
+    onMouseMove:(e:MouseEvent)=>{
+     
+    }
+   }
+   componentDidMount(){
+    (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
+    (this.clickboxRef.current)!.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
+    document.addEventListener('mousemove', this.clickboxHandlers.onMouseMove);
+  }
+  componentWillUnmount(){
+    (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
+    (this.clickboxRef.current)!.removeEventListener('mouseup', this.clickboxHandlers.onMouseUp);
+    document.removeEventListener('mousemove', this.clickboxHandlers.onMouseMove);
+  }
+  render(){
+    var selectionBox:JSX.Element = <rect></rect>
+    //   <rect 
+    //     x={this.state.selectionBoxStart.x} 
+    //     y={this.state.selectionBoxStart.y} 
+    //     width={this.state.selectionBoxStart.x-this.state.selectionBoxEnd.x} 
+    //     height={this.state.selectionBoxStart.y-this.state.selectionBoxEnd.y}
+    //     style={{          
+    //       stroke:'red',
+    //       strokeWidth:1
+    //     }}>
+    // </rect> 
+    return(
+      <div ref={this.clickboxRef} style={{zIndex:this.props.zIndex,height:'100vh',width:'100vw',position:'absolute'}}>
+          <svg style={{position:'absolute',overflow:'visible',zIndex:1}}>
+            {/* {this.state.selectionBoxActive && selectionBox} */}
+          </svg>
+      </div>
+    );
+  }
+}
 class App extends React.Component<any>{
   frameW = 150;
   frameH = 40;
+
   constructor(props:any){
     super(props);
   }
@@ -307,9 +359,8 @@ class App extends React.Component<any>{
   componentWillUnmount(){
     document.removeEventListener('keydown',this.keyboardHandlers.onKeyDown);
   }
-  renderLinksFromProps(){
+  renderLinksFromProps(zIndex:number){
     var links = this.props.links.map((link:LinkType) =>{
-      console.log('trying link',link.frame1,link.frame2);
       var positions = this.jointDecorator(
         this.props.framesData[link.frame1].position.x,
         this.props.framesData[link.frame1].position.y,
@@ -329,6 +380,7 @@ class App extends React.Component<any>{
           y1={positions.y1}
           x2={positions.x2}
           y2={positions.y2}
+          zIndex={zIndex}
           deleteCallback={this.props.linkRemoved}
       />);
     });
@@ -340,26 +392,11 @@ class App extends React.Component<any>{
   deselectionCallback=(ids:number[])=>{
     this.props.elementsDeselected(ids);
   }
-  pseudolinkCallback=(fromId:number,actionType:string)=>{
-    switch(actionType){
-      case 'start':{
-        this.props.pseudolinkAdded(fromId);
-        break;
-      }
-      case 'end':{
-        this.props.linkAdded(fromId,this.props.pseudolinks.at(0));
-        this.props.pseudolinksCleared();
-        break;
-      }
-      case 'clear':{
-        this.props.pseudolinksCleared();
-        break;
-      }
-    }
+  createLinkCallback=(fromId:number)=>{
+      this.props.linkAdded(fromId,this.props.effects.data['pseudolinkEffect'].id);
   }
 
-  //todo refactor
-  renderFramesFromProps():JSX.Element[]{
+  renderFramesFromProps(zIndex:number):JSX.Element[]{
     var arr = this.props.framesKeys.map((id:number) =>{
       var isSelected = false;
       if(this.props.ids.includes(id)){
@@ -369,6 +406,7 @@ class App extends React.Component<any>{
         <Frame id={id} text={this.props.framesData[id].label} 
                        position={this.props.framesData[id].position} 
                        size={this.props.framesData[id].size} 
+                       zIndex={zIndex}
                        frameH={this.frameH} 
                        frameW={this.frameW} 
                        radius={24} 
@@ -378,7 +416,12 @@ class App extends React.Component<any>{
                deleteCallback={this.props.frameRemoved}
                selectionCallback={this.selectionCallback}
                deselectionCallback={this.deselectionCallback}
-               pseudolinkCallback={this.pseudolinkCallback}
+               createLinkCallback={this.createLinkCallback}
+               effectStartCallback={this.props.effectSetStart}
+               effectEndCallback={this.props.effectSetEnd}
+               effectSetActiveCallback={this.props.effectSetActive}
+               effectSetIdCallback={this.props.effectSetId}
+               effects={this.props.effects}
                />
       );
     });
@@ -394,129 +437,15 @@ class App extends React.Component<any>{
   }
   render(){
     return(
-      <div style={{height:'500px',width:'500px'}}>
-        <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{console.log('button');  this.props.frameAdded('yoyo',{x:130,y:130})}}>Add shit</Button>
-        {this.renderFramesFromProps()}
-        {this.renderLinksFromProps()}
-        
+      <div>
+        <Clickbox zIndex={1} disableAllEffectsCallback={this.props.disableAllEffects}/>
+        <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{this.props.frameAdded('yoyo',{x:130,y:130})}}>Add shit</Button>
+        {this.renderFramesFromProps(2)}
+        {this.renderLinksFromProps(2)}
       </div>
     );
   };
 }
 
-// function printAtWordWrap( context:any , text:string, x:number, y:number, lineHeight:number, fitWidth:number)
-// {
-//     fitWidth = fitWidth || 0;
-    
-//     if (fitWidth <= 0)
-//     {
-//         context.fillText( text, x, y );
-//         return;
-//     }
-//     var words = text.split(' ');
-//     var currentLine = 0;
-//     var idx = 1;
-//     while (words.length > 0 && idx <= words.length)
-//     {
-//         var str = words.slice(0,idx).join(' ');
-//         var w = context.measureText(str).width;
-//         if ( w > fitWidth )
-//         {
-//             if (idx==1)
-//             {
-//                 idx=2;
-//             }
-//             context.fillText( words.slice(0,idx-1).join(' '), x, y + (lineHeight*currentLine) );
-//             currentLine++;
-//             words = words.splice(idx-1);
-//             idx = 1;
-//         }
-//         else
-//         {idx++;}
-//     }
-//     if  (idx > 0)
-//         context.fillText( words.join(' '), x, y + (lineHeight*currentLine) );
-//     return currentLine;
-// }
-// function Frame(x:number,y:number,label:string){
-//   var margin = 16;
-//   var textSize = 18;
-//   function draw(ctx:any,callback:any,id:number){
-//     var contentSize = {x:0,y:0};
-//     ctx.strokeStyle = '#000000';
-//     ctx.beginPath();
-
-//     contentSize.y = ((printAtWordWrap(ctx,label,x,y,textSize,150) as number)+1)*18+margin;
-//     contentSize.x = 150+margin;
-
-//     ctx.strokeRect(x-margin/2, y-textSize-margin/4, contentSize.x, contentSize.y);
-//     callback(id,contentSize);
-//   }
-//   return(draw);
-// }
-// function Link(props:{x1:number,y1:number,x2:number,y2:number,w1:number,h1:number,w2:number,h2:number}){
-//   return(
-//       <svg style={{position:'absolute',overflow:'visible',zIndex:9999}}>
-//         <line x1={props.x1} y1={props.y1} x2={props.x2} y2={props.y2} onClick={()=>console.log('hi')} style={{
-//           stroke:'red',
-//           strokeWidth:1,
-//           cursor:'pointer'
-//         }}>
-//         </line>
-//       </svg>
-//   );
-// }
-// class App extends React.Component<any>{
-//   canvasRef:any;
-//   constructor(props:any) {
-//     super(props);
-//     this.canvasRef = React.createRef();
-//   }
-//   drawFrames(){
-//     const canvas = this.canvasRef.current;
-//     const ctx = (canvas as any)!.getContext('2d');
-//     ctx.canvas.width  = window.innerWidth;
-//     ctx.canvas.height = window.innerHeight;
-//     ctx.font = '18px serif';
-
-//     this.props.frames.forEach((frame:FrameType)=>{
-//       var draw = Frame(frame.position.x,frame.position.y,frame.label);
-//       draw(ctx,this.props.frameSetSize,frame.id);
-//     });
-//   }
-//   drawLinks(){
-//     var links = [] as JSX.Element[];
-//     this.props.links.forEach((link:LinkType)=>{
-//       var x1 = this.props.frames.at(link.frame1).position.x;
-//       var y1 = this.props.frames.at(link.frame1).position.y;
-//       var x2 = this.props.frames.at(link.frame2).position.x;
-//       var y2 = this.props.frames.at(link.frame2).position.y;
-
-//       var w1 = this.props.frames.at(link.frame1).size.x;
-//       var h1 = this.props.frames.at(link.frame1).size.y;
-//       var w2 = this.props.frames.at(link.frame2).size.x;
-//       var h2 = this.props.frames.at(link.frame2).size.y;
-//       links.push(<Link x1={x1} y1={y1} x2={x2} y2={y2} w1={w1} h1={h1} w2={w2} h2={h2}/>);
-//     });
-//     return(links);
-//   }
-//   componentDidMount(){
-//     this.drawLinks();
-//     this.drawFrames();
-//   }
-//   conponentDidUpdate(prevProps:any){
-//     if(prevProps!==this.props){
-//       this.drawFrames();
-//     }
-//   }
-//   render(){
-//     return(
-//     <div>
-//       <canvas ref={this.canvasRef} style={{position:'absolute'}}/>
-//       {this.drawLinks()}
-//     </div>
-//     );
-//   }
-// }
 const App_w = connect(mapState, mapDispatch)(App);
 export default App_w;

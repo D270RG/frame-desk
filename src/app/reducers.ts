@@ -1,6 +1,6 @@
 import { createSlice,configureStore  } from "@reduxjs/toolkit"
 import type { PayloadAction} from '@reduxjs/toolkit'
-import type {Action,State,Payload,Position} from './interfaces'
+import type {Action,State,Payload,Position,OverlayEffectPayload} from './interfaces'
 
 function nextframeId(frames:Array<any>) {
   const maxId = frames.reduce((maxId, frame) => Math.max(frame.id, maxId), -1)
@@ -19,12 +19,59 @@ const graphInitialState:State = {
   links: [
     { frame1: 0, frame2: 1},
     { frame1: 1, frame2: 2},
-  ],
-  pseudolinks: [] as number[] //start ids only
+  ]
 }
 const selectionInitialState:State = {
   ids: [] as number[]
 }
+const overlayEffectsInitialState:any ={
+  effects:{
+      data:{
+        'pseudolinkEffect':{
+          id:0,
+          isActive:false,
+          startPos:{x:0,y:0},
+          endPos:{x:0,y:0}
+        },
+        'selectionEffect':{
+          isActive:false,
+          startPos:{x:0,y:0},
+          endPos:{x:0,y:0}
+        },
+      },
+      keys:['pseudolinkEffect','selectionEffect']
+  }
+}
+const overlayEffectsSlice = createSlice({
+  name:'overlayEffects',
+  initialState:overlayEffectsInitialState,
+  reducers:{
+    addEffect:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      // state.effects!.data[action.type] = {
+        //TODO
+      // };
+      // state.effects!.keys.push(action.payload.type);
+    },
+    disableAllEffects:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects.keys.forEach((effectKey:string)=>{
+        state.effects.data[effectKey].isActive=false;
+      });
+    },
+    effectSetStart:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data[action.payload.type as string].startPos = action.payload.startPos;
+    },
+    effectSetEnd:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data[action.payload.type as string].endPos = action.payload.endPos;
+    },
+    effectSetActive:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data[action.payload.type as string].isActive = action.payload.isActive;
+    },
+    effectSetId:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data[action.payload.type as string].id = action.payload.id;
+    },
+  }
+});
+
 const graphSlice = createSlice({
   name:'frameReducer',
   initialState:graphInitialState,
@@ -64,16 +111,14 @@ const graphSlice = createSlice({
     },
 
     linkAdded:(state, action:PayloadAction<Payload>)=>{
-      if(action.payload.link!.frame1>action.payload.link!.frame2){
-        var buffer = action.payload.link!.frame2;//swap values, frame1<frame2
+      if(action.payload.link!.frame1>action.payload.link!.frame2){ 
+        var buffer = action.payload.link!.frame2;
         action.payload.link!.frame2 = action.payload.link!.frame1;
         action.payload.link!.frame1 = buffer;
-      }
-      state.links!.filter(link=>
-        !((link.frame1== action.payload.link!.frame1) && (link.frame2== action.payload.link!.frame2))
-      ); 
-      if(!(state.links!.includes({frame1:action.payload.link!.frame1,frame2:action.payload.link!.frame2}))
-        && (action.payload.link!.frame1!==action.payload.link!.frame2)){
+      } //swap values, frame1<frame2
+      var duplicates = state.links!.filter(link=>((link.frame1==action.payload.link!.frame1)&&(link.frame2==action.payload.link!.frame2)) 
+                                                || ((link.frame1==action.payload.link!.frame2)&&(link.frame2==action.payload.link!.frame1)));
+      if((duplicates.length==0)&&(action.payload.link!.frame1!==action.payload.link!.frame2)){
           state.links!.push(action.payload.link as any);
       }
     },
@@ -89,16 +134,7 @@ const graphSlice = createSlice({
       state.links = state.links!.filter(link=>
         ((link.frame1!== action.payload.id) && (link.frame2!==action.payload.id))
       ); 
-    },
-    pseudolinkAdded:(state,action:PayloadAction<Payload>)=>{
-      state.pseudolinks!.push(action.payload.id as number);
-    },
-    pseudolinksCleared:(state,action:PayloadAction<Payload>)=>{
-      state.pseudolinks!.length=0;
     }
-  },
-  extraReducers:{
-    
   }
 });
 const selectionSlice = createSlice({
@@ -122,4 +158,4 @@ const selectionSlice = createSlice({
     }
   }
 });
-export {graphSlice,selectionSlice};
+export {graphSlice,selectionSlice,overlayEffectsSlice};
