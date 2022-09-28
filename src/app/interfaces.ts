@@ -44,18 +44,20 @@ interface Payload{
     link?:LinkType,
     selectedIds?:number[]
 }
-interface OverlayeffectTypes{
-  types:'pseudolinkEffect'|'selectionBoxEffect'
+interface OverlayEffectTypes{
+  types:'pseudolinkEffect'|'selectionBoxEffect'|'dragEffect'
 }
 interface OverlayEffectPayload{
-   type?:OverlayeffectTypes['types'],
+   type?:OverlayEffectTypes['types'],
    id?:number,
    isActive?:boolean,
    startPos?:Position,
    endPos?:Position
+
+   ids?:number[]
 }
 interface Action{
   type:string,
   payload:Payload
 }
-export type {Payload,State,Action,LinkType,Position,Position4,FrameType,OverlayEffectPayload,EffectType,OverlayeffectTypes}
+export type {Payload,State,Action,LinkType,Position,Position4,FrameType,OverlayEffectPayload,EffectType,OverlayEffectTypes}

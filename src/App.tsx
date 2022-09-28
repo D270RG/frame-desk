@@ -6,7 +6,7 @@ import '../node_modules/bootstrap/scss/bootstrap.scss'
 import ReactDOM from 'react-dom';
 import {useState,useEffect,useRef} from 'react'
 
-import type {State,LinkType,Position,Position4,FrameType,EffectType,OverlayeffectTypes} from './app/interfaces'
+import {State,LinkType,Position,Position4,FrameType,EffectType,OverlayEffectTypes} from './app/interfaces'
 import {connect} from 'react-redux'
 import {graphSlice,selectionSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
@@ -36,11 +36,16 @@ const mapDispatch = (dispatch:any)=>({
   elementsSelected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsSelected({selectedIds:selectedIds}))},
   elementsDeselected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsDeselected({selectedIds:selectedIds}))},
 
-  effectSetStart:(type:OverlayeffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
-  effectSetEnd:(type:OverlayeffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
-  effectSetActive:(type:OverlayeffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
-  effectSetId:(type:OverlayeffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
-  disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))}
+  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
+  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
+  effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
+  effectSetId:(type:OverlayEffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
+  disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))},
+  //todo:separate slice
+  dragEffectAdded:(id:number,startPos:Position,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectAdded({id:id,startPos:startPos,endPos:endPos}))},
+  dragEffectSetEndPos:(id:number,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetEndPos({id:id,endPos:endPos}))},
+  dragEffectSetStartPos:(id:number,startPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetStartPos({id:id,endPos:startPos}))},
+  dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))}
 });
 
 class Frame extends React.Component<{id:Readonly<number>,text:string,position:Position,size:Position,frameH:number,frameW:number,radius:number,
@@ -55,24 +60,27 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
                                       effectStartCallback:any,
                                       effectEndCallback:any,
                                       effectSetActiveCallback:any,
-                                      effectSetIdCallback:any
+                                      effectSetIdCallback:any,
+                                      
+                                      dragEffectAddedCallback:any,
+                                      dragEffectStartCallback:any,
+                                      dragEffectEndCallback:any,
+                                      dragEffectsClear:any
                                     },
-                                    {dragging:boolean,rel:null|Position}>{
+                                    {}>{
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
  contentRef = React.createRef<any>();
  constructor(props:any){
   super(props);
-  this.state = {dragging:false,rel:null};
  }
  componentDidMount(){
     //handle box binding
-    window.addEventListener('mousemove', this.handleHandlers.onMouseMove);
     // document.addEventListener('mouseup', this.handleHandlers.onMouseUp);
+    (this.handleRef.current)!.addEventListener('mouseup', this.handleHandlers.onMouseUp);
     (this.handleRef.current)!.addEventListener('mousedown', this.handleHandlers.onMouseDown);
 
     //content box binding
-    window.addEventListener('mousemove', this.contentHandlers.onMouseMove);
     // document.addEventListener('mouseup', this.contentHandlers.onMouseUpDocument);
     (this.contentRef.current)!.addEventListener('mouseup', this.contentHandlers.onMouseUpElement);
     (this.contentRef.current)!.addEventListener('mousedown', this.contentHandlers.onMouseDown);
@@ -86,12 +94,10 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
  }
  componentWillUnmount(){
   //handle box unbinding
-  window.removeEventListener('mousemove', this.handleHandlers.onMouseMove);
-  document.removeEventListener('mouseup', this.handleHandlers.onMouseUp);
+  (this.handleRef.current)!.removeEventListener('mouseup', this.handleHandlers.onMouseUp);
   (this.handleRef.current)!.removeEventListener('mousedown', this.handleHandlers.onMouseDown);
 
   //content box unbinding
-  window.removeEventListener('mousemove', this.contentHandlers.onMouseMove);
   (this.contentRef.current)!.removeEventListener('mouseup', this.contentHandlers.onMouseUpElement);
   (this.contentRef.current)!.removeEventListener('mousedown', this.contentHandlers.onMouseDown);
 
@@ -102,29 +108,14 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
  handleHandlers = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
-    this.setState({
-      dragging: true,
-      rel: {
-        x: e.pageX - this.props.position.x,
-        y: e.pageY - this.props.position.y,
-      }
-    });
-    // this.props.deselectionCallback([]);
-    e.stopPropagation()
-    e.preventDefault()
-  
+    this.props.dragEffectAddedCallback(this.props.id,
+                  {x:e.pageX-this.props.position.x,y:e.pageY-this.props.position.y}, //start
+                  {x:e.pageX,y:e.pageY}); //end
+    this.props.effectSetActiveCallback('dragEffect',true); //todo: 4 actions -> 1 action
   },
   onMouseUp:(e:MouseEvent)=>{
-    this.setState({dragging: false})
-    e.stopPropagation()
-    e.preventDefault()
-  },
-  onMouseMove:(e:MouseEvent)=>{
-    if(!this.state.dragging) return;
-    // this.ref.current!.style.zIndex+=1;
-    this.props.dragCallback(this.props.id,{x:e.pageX-this.state.rel!.x,y:e.pageY-this.state.rel!.y});
-    e.stopPropagation()
-    e.preventDefault()
+    this.props.effectSetActiveCallback('dragEffect',false);
+    this.props.dragEffectsClear();
   }
  }
  contentHandlers = {
@@ -134,25 +125,15 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
       y: e.pageY});
     this.props.effectEndCallback('pseudolinkEffect',{x: e.pageX,
       y: e.pageY});
-    this.props.effectSetIdCallback('pseudolinkEffect',this.props.id,'start');
+    this.props.effectSetIdCallback('pseudolinkEffect',this.props.id);
     this.props.effectSetActiveCallback('pseudolinkEffect',true); //todo: 4 actions -> 1 action
   
   },
-  // onMouseUpDocument:(e:MouseEvent)=>{
-  //   console.log('doc');
-  //   this.props.pseudolinkCallback(this.props.id,'clear');
-  //   this.setState({pseudolinkDragging: false});
-  // },
   onMouseUpElement:(e:MouseEvent)=>{
     if (e.button !== 0) return;
     this.props.effectSetActiveCallback('pseudolinkEffect',false);
     this.props.createLinkCallback(this.props.id);
-  },
-  onMouseMove:(e:MouseEvent)=>{
-    if(!this.props.effects.data['pseudolinkEffect'].isActive) return;
-    this.props.effectEndCallback('pseudolinkEffect',{x: e.pageX,
-                                              y: e.pageY});
- }
+  }
  }
  wrapHandlers = {
     onDoubleClick:(e:MouseEvent)=>{
@@ -283,7 +264,13 @@ class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
     );
   }
 }
-class Clickbox extends React.Component<{zIndex:number,disableAllEffectsCallback:any}>{
+class Clickbox extends React.Component<{zIndex:number,disableAllEffectsCallback:any,
+                                        effectStartCallback:any,
+                                        effectEndCallback:any,
+                                        effectSetActiveCallback:any,
+                                        effectSetIdCallback:any,
+                                        dragEffectsClear:any,
+                                        effects:EffectType}>{
   selectionBoxRef = React.createRef<HTMLDivElement>();
   clickboxRef = React.createRef<HTMLDivElement>();
   constructor(props:any){
@@ -291,30 +278,25 @@ class Clickbox extends React.Component<{zIndex:number,disableAllEffectsCallback:
   }
   clickboxHandlers={
     onMouseDown:(e:MouseEvent)=>{
-      if (e.button !== 0) return;
-      this.setState({selectionBoxActive:true});
-      this.setState({
-        selectionBoxStart: {
-        x: e.pageX,
-        y: e.pageY
-      }});
+      if (e.button !== 0) return
+      this.props.effectStartCallback('selectionBoxEffect',{x: e.pageX,
+        y: e.pageY});
+      this.props.effectEndCallback('selectionBoxEffect',{x: e.pageX,
+        y: e.pageY});
+      this.props.effectSetActiveCallback('selectionBoxEffect',true); //todo: 4 actions -> 1 action
     },
     onMouseUp:(e:MouseEvent)=>{
       this.props.disableAllEffectsCallback();
-    },
-    onMouseMove:(e:MouseEvent)=>{
-     
+      this.props.dragEffectsClear();
     }
    }
    componentDidMount(){
     (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
     (this.clickboxRef.current)!.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
-    document.addEventListener('mousemove', this.clickboxHandlers.onMouseMove);
   }
   componentWillUnmount(){
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
     (this.clickboxRef.current)!.removeEventListener('mouseup', this.clickboxHandlers.onMouseUp);
-    document.removeEventListener('mousemove', this.clickboxHandlers.onMouseMove);
   }
   render(){
     var selectionBox:JSX.Element = <rect></rect>
@@ -337,6 +319,20 @@ class Clickbox extends React.Component<{zIndex:number,disableAllEffectsCallback:
     );
   }
 }
+function posOp(a:Position,operation:string,b:Position){
+  var newPos:Position = {x:0,y:0};
+  console.log('posOp',a,b);
+  switch(operation){
+    case '+':{
+      newPos = {x:a.x+b.x,y:a.y+b.y};
+      break;
+    }
+    case '-':{
+      newPos = {x:a.x-b.x,y:a.y-b.y};
+    }
+  }
+  return(newPos);
+}
 class App extends React.Component<any>{
   frameW = 150;
   frameH = 40;
@@ -344,7 +340,22 @@ class App extends React.Component<any>{
   constructor(props:any){
     super(props);
   }
-  keyboardHandlers={
+   globalHandlers={
+    onMouseMove:(e:MouseEvent)=>{
+      this.props.effects.keys.forEach((effectKey:OverlayEffectTypes['types'])=>{
+        if(this.props.effects.data[effectKey].isActive){
+          this.props.effectSetEnd(effectKey,{x: e.pageX,
+            y: e.pageY});
+        }
+      });
+      if(this.props.effects.data['dragEffect'].isActive){
+        console.log('activedrag');
+        this.props.effects.data['dragEffect'].draggedFrames.keys.forEach((keyId:number)=>{
+          this.props.frameMoved(keyId,posOp({x:e.pageX,y:e.pageY},'-',this.props.effects.data['dragEffect'].draggedFrames.data[keyId].startPos));
+        });
+      }
+
+    },
     onKeyDown:(e:KeyboardEvent)=>{
       if(e.key == 'Delete'){
         var idsToDelete = [] as number[];
@@ -354,10 +365,12 @@ class App extends React.Component<any>{
     }
    }
   componentDidMount(){
-    document.addEventListener('keydown',this.keyboardHandlers.onKeyDown);
+    document.addEventListener('keydown',this.globalHandlers.onKeyDown);
+    document.addEventListener('mousemove',this.globalHandlers.onMouseMove);
   }
   componentWillUnmount(){
-    document.removeEventListener('keydown',this.keyboardHandlers.onKeyDown);
+    document.addEventListener('keydown',this.globalHandlers.onKeyDown);
+    document.addEventListener('mousemove',this.globalHandlers.onMouseMove);
   }
   renderLinksFromProps(zIndex:number){
     var links = this.props.links.map((link:LinkType) =>{
@@ -421,6 +434,12 @@ class App extends React.Component<any>{
                effectEndCallback={this.props.effectSetEnd}
                effectSetActiveCallback={this.props.effectSetActive}
                effectSetIdCallback={this.props.effectSetId}
+
+               dragEffectAddedCallback={this.props.dragEffectAdded}
+               dragEffectStartCallback={this.props.dragEffectSetStartPos}
+               dragEffectEndCallback={this.props.dragEffectSetEndPos}
+               dragEffectsClear={this.props.dragEffectsClear}
+
                effects={this.props.effects}
                />
       );
@@ -438,7 +457,14 @@ class App extends React.Component<any>{
   render(){
     return(
       <div>
-        <Clickbox zIndex={1} disableAllEffectsCallback={this.props.disableAllEffects}/>
+        <Clickbox zIndex={1} 
+        disableAllEffectsCallback={this.props.disableAllEffects}
+        effectStartCallback={this.props.effectSetStart}
+        effectEndCallback={this.props.effectSetEnd}
+        effectSetActiveCallback={this.props.effectSetActive}
+        effectSetIdCallback={this.props.effectSetId}
+        dragEffectsClear={this.props.dragEffectsClear}
+        effects={this.props.effects}/>
         <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{this.props.frameAdded('yoyo',{x:130,y:130})}}>Add shit</Button>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}

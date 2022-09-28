@@ -33,13 +33,25 @@ const overlayEffectsInitialState:any ={
           startPos:{x:0,y:0},
           endPos:{x:0,y:0}
         },
-        'selectionEffect':{
+        'selectionBoxEffect':{
           isActive:false,
           startPos:{x:0,y:0},
           endPos:{x:0,y:0}
         },
+        'dragEffect':{
+          isActive:false,
+          draggedFrames:{
+            data:{
+              0:{
+                startPos:{x:0,y:0},
+                endPos:{x:0,y:0}
+              }
+            },
+              keys:[0]
+          }
+        }
       },
-      keys:['pseudolinkEffect','selectionEffect']
+      keys:['pseudolinkEffect','selectionBoxEffect','dragEffect']
   }
 }
 const overlayEffectsSlice = createSlice({
@@ -69,6 +81,36 @@ const overlayEffectsSlice = createSlice({
     effectSetId:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data[action.payload.type as string].id = action.payload.id;
     },
+    //specific actions
+    dragEffectAdded:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['dragEffect'].draggedFrames.data[action.payload.id as number] = {
+        startPos:action.payload.startPos,
+        endPos:action.payload.endPos
+      }
+      state.effects!.data['dragEffect'].draggedFrames.keys.push(action.payload.id as number);
+    },
+    dragEffectSetEndPos:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['dragEffect'].draggedFrames.data[action.payload.id as number].endPos = action.payload.endPos
+    },
+    dragEffectSetStartPos:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['dragEffect'].draggedFrames.data[action.payload.id as number].endPos = action.payload.endPos
+    },
+    dragEffectsClear:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['dragEffect'].draggedFrames.keys.length = 0;
+      state.effects!.data['dragEffect'].draggedFrames.data = {};
+    }
+    // effectUnsetIds:(state,action:PayloadAction<Payload>)=>{
+    //   if(action.payload.selectedIds!.length===0){
+    //     console.log('deselect all');
+    //     state.ids!.length=0;
+    //   } else {
+    //     console.log('deselect id',action.payload.selectedIds);
+    //     state.ids!.filter((id:number)=>(
+    //       action.payload.selectedIds!.includes(id)
+    //       )
+    //     ); 
+    //   }
+    // }
   }
 });
 
