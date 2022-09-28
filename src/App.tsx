@@ -131,8 +131,8 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
   },
   onMouseUpElement:(e:MouseEvent)=>{
     if (e.button !== 0) return;
+    if(this.props.effects.data['pseudolinkEffect'].isActive) this.props.createLinkCallback(this.props.id);
     this.props.effectSetActiveCallback('pseudolinkEffect',false);
-    this.props.createLinkCallback(this.props.id);
   }
  }
  wrapHandlers = {
@@ -292,11 +292,11 @@ class Clickbox extends React.Component<{zIndex:number,disableAllEffectsCallback:
    }
    componentDidMount(){
     (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    (this.clickboxRef.current)!.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
+    document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
   }
   componentWillUnmount(){
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    (this.clickboxRef.current)!.removeEventListener('mouseup', this.clickboxHandlers.onMouseUp);
+    document.removeEventListener('mouseup', this.clickboxHandlers.onMouseUp);
   }
   render(){
     var selectionBox:JSX.Element = <rect></rect>
@@ -321,7 +321,6 @@ class Clickbox extends React.Component<{zIndex:number,disableAllEffectsCallback:
 }
 function posOp(a:Position,operation:string,b:Position){
   var newPos:Position = {x:0,y:0};
-  console.log('posOp',a,b);
   switch(operation){
     case '+':{
       newPos = {x:a.x+b.x,y:a.y+b.y};
@@ -349,7 +348,6 @@ class App extends React.Component<any>{
         }
       });
       if(this.props.effects.data['dragEffect'].isActive){
-        console.log('activedrag');
         this.props.effects.data['dragEffect'].draggedFrames.keys.forEach((keyId:number)=>{
           this.props.frameMoved(keyId,posOp({x:e.pageX,y:e.pageY},'-',this.props.effects.data['dragEffect'].draggedFrames.data[keyId].startPos));
         });

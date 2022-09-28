@@ -28,7 +28,7 @@ const overlayEffectsInitialState:any ={
   effects:{
       data:{
         'pseudolinkEffect':{
-          id:0,
+          id:-1,
           isActive:false,
           startPos:{x:0,y:0},
           endPos:{x:0,y:0}
@@ -42,12 +42,12 @@ const overlayEffectsInitialState:any ={
           isActive:false,
           draggedFrames:{
             data:{
-              0:{
-                startPos:{x:0,y:0},
-                endPos:{x:0,y:0}
-              }
+              // 0:{
+              //   startPos:{x:0,y:0},
+              //   endPos:{x:0,y:0}
+              // }
             },
-              keys:[0]
+              keys:[/*0*/]
           }
         }
       },
