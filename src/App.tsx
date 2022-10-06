@@ -10,62 +10,79 @@ import {State,LinkType,Position,Position4,FrameType,EffectType,OverlayEffectType
 import {connect} from 'react-redux'
 import {graphSlice,selectionSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
-function mapState(state:RootState){
+
+function mapElementsState(state:any){
   return {
-    framesData: state.graphReducer.frames!.data,
-    framesKeys: state.graphReducer.frames!.keys,
+      framesData: state.graphReducer.frames!.data,
+      framesKeys: state.graphReducer.frames!.keys,
 
-    links: state.graphReducer.links,
+      links: state.graphReducer.links,
 
-    ids: state.selectionReducer.ids,
-
-    effects: state.overlayEffectsReducer.effects
+      ids: state.selectionReducer.ids,
   }
 }
-const mapDispatch = (dispatch:any)=>({ 
-  frameSetSize:(id:number,size:Position)=>{dispatch(graphSlice.actions.frameSetSize({id:id,size:size}))},
-  frameAdded:(label:string,position:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,position:position}))},
-  framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
-  // frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
-  frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
-  // frameMovedRel:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMovedRel({id:id,position:position}))},
+const mapElementsDispatch = (dispatch:any)=>({ 
+    frameSetSize:(id:number,size:Position)=>{dispatch(graphSlice.actions.frameSetSize({id:id,size:size}))},
+    frameAdded:(label:string,position:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,position:position}))},
+    framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
+    // frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
+    frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
 
-  linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
-  linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))},
+    linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
+    linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))},
 
-  elementsSelected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsSelected({selectedIds:selectedIds}))},
-  elementsDeselected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsDeselected({selectedIds:selectedIds}))},
-
-  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
-  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
-  effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
-  effectSetId:(type:OverlayEffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
-  disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))},
-  //todo:separate slice
-  dragEffectAdded:(id:number,startPos:Position,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectAdded({id:id,startPos:startPos,endPos:endPos}))},
-  dragEffectSetEndPos:(id:number,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetEndPos({id:id,endPos:endPos}))},
-  dragEffectSetStartPos:(id:number,startPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetStartPos({id:id,endPos:startPos}))},
-  dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))}
+    elementsSelected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsSelected({selectedIds:selectedIds}))},
+    elementsDeselected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsDeselected({selectedIds:selectedIds}))}
 });
 
+function mapEffectsState(state:any){
+  return {
+      effects: state.overlayEffectsReducer.effects
+  }
+};
+const mapEffectsDispatch = (dispatch:any) =>({
+    effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
+    effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
+    effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
+    effectSetId:(type:OverlayEffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
+    disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))},
+  
+    dragEffectAdded:(id:number,startPos:Position,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectAdded({id:id,startPos:startPos,endPos:endPos}))},
+    dragEffectSetEndPos:(id:number,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetEndPos({id:id,endPos:endPos}))},
+    dragEffectSetStartPos:(id:number,startPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetStartPos({id:id,endPos:startPos}))},
+    dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))}
+});
+
+// effectSetStart={this.props.effectSetStart}
+// effectSetEnd={this.props.effectSetEnd}
+// effectSetActive={this.props.effectSetActive}
+// effectSetId={this.props.effectSetId}
+
+// dragEffectAdded={this.props.dragEffectAdded}
+// dragEffectSetStartPos={this.props.dragEffectSetStartPos}
+// dragEffectSetEndPos={this.props.dragEffectSetEndPos}
+// dragEffectsClear={this.props.dragEffectsClear}
+
+// effects={this.props.effects}
 class Frame extends React.Component<{id:Readonly<number>,text:string,position:Position,size:Position,frameH:number,frameW:number,radius:number,
-                                    isSelected:boolean, zIndex:number, effects:EffectType,
+                                    isSelected:boolean, zIndex:number,
                                       initCallback:any,
                                       dragCallback:any,
                                       selectionCallback:any,
                                       deselectionCallback:any,
                                       deleteCallback:any,
-                                      createLinkCallback:any
-                                      
-                                      effectStartCallback:any,
-                                      effectEndCallback:any,
-                                      effectSetActiveCallback:any,
-                                      effectSetIdCallback:any,
-                                      
-                                      dragEffectAddedCallback:any,
-                                      dragEffectStartCallback:any,
-                                      dragEffectEndCallback:any,
-                                      dragEffectsClear:any
+                                      createLinkCallback:any,
+
+                                      effectSetStart:any,
+                                      effectSetEnd:any,
+                                      effectSetActive:any,
+                                      effectSetId:any,
+
+                                      dragEffectAdded:any,
+                                      dragEffectSetStartPos:any,
+                                      dragEffectsClear:any,
+                                      dragEffectSetEndPos:any,
+                                      effects:any
                                     },
                                     {}>{
  wrapRef = React.createRef<any>();
@@ -76,12 +93,10 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
  }
  componentDidMount(){
     //handle box binding
-    // document.addEventListener('mouseup', this.handleHandlers.onMouseUp);
-    (this.handleRef.current)!.addEventListener('mouseup', this.handleHandlers.onMouseUp);
+    // (this.handleRef.current)!.addEventListener('mouseup', this.handleHandlers.onMouseUp);
     (this.handleRef.current)!.addEventListener('mousedown', this.handleHandlers.onMouseDown);
 
     //content box binding
-    // document.addEventListener('mouseup', this.contentHandlers.onMouseUpDocument);
     (this.contentRef.current)!.addEventListener('mouseup', this.contentHandlers.onMouseUpElement);
     (this.contentRef.current)!.addEventListener('mousedown', this.contentHandlers.onMouseDown);
 
@@ -94,7 +109,7 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
  }
  componentWillUnmount(){
   //handle box unbinding
-  (this.handleRef.current)!.removeEventListener('mouseup', this.handleHandlers.onMouseUp);
+  // (this.handleRef.current)!.removeEventListener('mouseup', this.handleHandlers.onMouseUp);
   (this.handleRef.current)!.removeEventListener('mousedown', this.handleHandlers.onMouseDown);
 
   //content box unbinding
@@ -108,43 +123,37 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
  handleHandlers = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
-    this.props.dragEffectAddedCallback(this.props.id,
+    this.props.dragEffectAdded(this.props.id,
                   {x:e.pageX-this.props.position.x,y:e.pageY-this.props.position.y}, //start
                   {x:e.pageX,y:e.pageY}); //end
-    this.props.effectSetActiveCallback('dragEffect',true); //todo: 4 actions -> 1 action
+    this.props.effectSetActive('dragEffect',true); //todo: 4 actions -> 1 action
   },
-  onMouseUp:(e:MouseEvent)=>{
-    this.props.effectSetActiveCallback('dragEffect',false);
-    this.props.dragEffectsClear();
-  }
+  // onMouseUp:(e:MouseEvent)=>{
+  //  this.props.effectSetActive('dragEffect',false);
+  //  this.props.dragEffectsClear();
+  // }
  }
  contentHandlers = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
-    this.props.effectStartCallback('pseudolinkEffect',{x: e.pageX,
+    this.props.effectSetStart('pseudolinkEffect',{x: e.pageX,
       y: e.pageY});
-    this.props.effectEndCallback('pseudolinkEffect',{x: e.pageX,
+    this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
       y: e.pageY});
-    this.props.effectSetIdCallback('pseudolinkEffect',this.props.id);
-    this.props.effectSetActiveCallback('pseudolinkEffect',true); //todo: 4 actions -> 1 action
+    this.props.effectSetId('pseudolinkEffect',this.props.id);
+    this.props.effectSetActive('pseudolinkEffect',true); //todo: 4 actions -> 1 action
   
   },
   onMouseUpElement:(e:MouseEvent)=>{
     if (e.button !== 0) return;
     if(this.props.effects.data['pseudolinkEffect'].isActive) this.props.createLinkCallback(this.props.id);
-    this.props.effectSetActiveCallback('pseudolinkEffect',false);
   }
  }
  wrapHandlers = {
     onDoubleClick:(e:MouseEvent)=>{
       if(this.props.isSelected){
         this.props.deselectionCallback([]);
-      } else {
-        this.props.deselectionCallback([]);
-        this.props.selectionCallback([this.props.id]);
       }
-      e.stopPropagation()
-      e.preventDefault()
     }
  }
 
@@ -219,7 +228,7 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
   
  }
 }
-
+const Frame_w = connect(mapEffectsState, mapEffectsDispatch)(Frame);
 
 class Line extends React.Component<{x1:number,y1:number,x2:number,y2:number,deleteCallback:any,id1:number,id2:number},{}>{
   ref = React.createRef<any>();
@@ -264,61 +273,64 @@ class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
     );
   }
 }
-class Clickbox extends React.Component<{zIndex:number,disableAllEffectsCallback:any,
-                                        effectStartCallback:any,
-                                        effectEndCallback:any,
-                                        effectSetActiveCallback:any,
-                                        effectSetIdCallback:any,
+
+class Clickbox extends React.Component<{zIndex:number,
+                                        disableAllEffects:any,
+                                        effectSetStart:any,
+                                        effectSetEnd:any,
+                                        effectSetActive:any,
+                                        effectSetId:any,
                                         dragEffectsClear:any,
-                                        effects:EffectType}>{
+                                        effects:EffectType,
+                                      
+                                        areaSelectionCallback:any,
+                                        areaDeselectionCallback:any}>{
   selectionBoxRef = React.createRef<HTMLDivElement>();
   clickboxRef = React.createRef<HTMLDivElement>();
   constructor(props:any){
     super(props);
   }
   clickboxHandlers={
+    // onDoubleClick:(e:MouseEvent)=>{
+    //   if (e.button !== 0) return
+    //   this.props.areaDeselectionCallback([]);
+    // },
     onMouseDown:(e:MouseEvent)=>{
       if (e.button !== 0) return
-      this.props.effectStartCallback('selectionBoxEffect',{x: e.pageX,
+      this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
         y: e.pageY});
-      this.props.effectEndCallback('selectionBoxEffect',{x: e.pageX,
+      this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
         y: e.pageY});
-      this.props.effectSetActiveCallback('selectionBoxEffect',true); //todo: 4 actions -> 1 action
+      this.props.effectSetActive('selectionBoxEffect',true); //todo: 4 actions -> 1 action
     },
     onMouseUp:(e:MouseEvent)=>{
-      this.props.disableAllEffectsCallback();
+      if(this.props.effects.data['selectionBoxEffect'].isActive){
+        this.props.areaSelectionCallback(this.props.effects.data['selectionBoxEffect'].startPos,this.props.effects.data['selectionBoxEffect'].endPos);
+      }
+      this.props.disableAllEffects();
       this.props.dragEffectsClear();
     }
    }
    componentDidMount(){
     (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
+    // (this.clickboxRef.current)!.addEventListener('dblclick', this.clickboxHandlers.onDoubleClick);
     document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
   }
   componentWillUnmount(){
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
+    // (this.clickboxRef.current)!.removeEventListener('dblclick', this.clickboxHandlers.onDoubleClick);
     document.removeEventListener('mouseup', this.clickboxHandlers.onMouseUp);
   }
   render(){
-    var selectionBox:JSX.Element = <rect></rect>
-    //   <rect 
-    //     x={this.state.selectionBoxStart.x} 
-    //     y={this.state.selectionBoxStart.y} 
-    //     width={this.state.selectionBoxStart.x-this.state.selectionBoxEnd.x} 
-    //     height={this.state.selectionBoxStart.y-this.state.selectionBoxEnd.y}
-    //     style={{          
-    //       stroke:'red',
-    //       strokeWidth:1
-    //     }}>
-    // </rect> 
     return(
       <div ref={this.clickboxRef} style={{zIndex:this.props.zIndex,height:'100vh',width:'100vw',position:'absolute'}}>
-          <svg style={{position:'absolute',overflow:'visible',zIndex:1}}>
-            {/* {this.state.selectionBoxActive && selectionBox} */}
-          </svg>
+
       </div>
     );
   }
 }
+const Clickbox_w = connect(mapEffectsState, mapEffectsDispatch)(Clickbox);
+
 function posOp(a:Position,operation:string,b:Position){
   var newPos:Position = {x:0,y:0};
   switch(operation){
@@ -338,6 +350,58 @@ class App extends React.Component<any>{
 
   constructor(props:any){
     super(props);
+  }
+  selectElementsInArea=(startPos:Position,endPos:Position)=>{
+    function verticePass(/*startPos:Position,endPos:Position*/ verticePos:Position,shift:Position){
+      return (((verticePos.x+shift.x)>startPos.x && (verticePos.x+shift.x)<endPos.x) || ((verticePos.x+shift.x)<startPos.x && (verticePos.x+shift.x)>endPos.x))
+      && (((verticePos.y+shift.y)>startPos.y && (verticePos.y+shift.y)<endPos.y)||((verticePos.y+shift.y)<startPos.y && (verticePos.y+shift.y)>endPos.y))
+    }
+    var arr = this.props.framesKeys.map((id:number) => {
+      var frame = this.props.framesData[id];
+      if(verticePass(frame.position,{x:0,y:0})
+        ||verticePass(frame.position,{x:frame.size.x,y:0})
+        ||verticePass(frame.position,{x:frame.size.x,y:frame.size.y})
+        ||verticePass(frame.position,{x:0,y:frame.size.y})
+      ){
+        return(id);
+      }
+    })
+    this.props.elementsDeselected([]);
+    this.props.elementsSelected(arr);
+  }
+  createSelectionRectangle(startPosition:Position,endPosition:Position){
+    return(
+      <svg style={{position:'absolute',overflow:'visible'}}>
+        <line
+          x1={startPosition.x} y1={startPosition.y}
+          x2={endPosition.x} y2={startPosition.y}
+          style={{          
+            stroke:'red',
+            strokeWidth:1,
+          }}/>
+          <line
+          x1={endPosition.x} y1={startPosition.y}
+          x2={endPosition.x} y2={endPosition.y}
+          style={{          
+            stroke:'red',
+            strokeWidth:1
+          }}/>
+          <line
+          x1={endPosition.x} y1={endPosition.y}
+          x2={startPosition.x} y2={endPosition.y}
+          style={{          
+            stroke:'red',
+            strokeWidth:1
+          }}/>
+          <line
+          x1={startPosition.x} y1={endPosition.y}
+          x2={startPosition.x} y2={startPosition.y}
+          style={{          
+            stroke:'red',
+            strokeWidth:1
+          }}/>
+      </svg>
+    );
   }
    globalHandlers={
     onMouseMove:(e:MouseEvent)=>{
@@ -406,7 +470,6 @@ class App extends React.Component<any>{
   createLinkCallback=(fromId:number)=>{
       this.props.linkAdded(fromId,this.props.effects.data['pseudolinkEffect'].id);
   }
-
   renderFramesFromProps(zIndex:number):JSX.Element[]{
     var arr = this.props.framesKeys.map((id:number) =>{
       var isSelected = false;
@@ -414,7 +477,7 @@ class App extends React.Component<any>{
         isSelected = true;
       }
       return(
-        <Frame id={id} text={this.props.framesData[id].label} 
+        <Frame_w id={id} text={this.props.framesData[id].label} 
                        position={this.props.framesData[id].position} 
                        size={this.props.framesData[id].size} 
                        zIndex={zIndex}
@@ -428,17 +491,6 @@ class App extends React.Component<any>{
                selectionCallback={this.selectionCallback}
                deselectionCallback={this.deselectionCallback}
                createLinkCallback={this.createLinkCallback}
-               effectStartCallback={this.props.effectSetStart}
-               effectEndCallback={this.props.effectSetEnd}
-               effectSetActiveCallback={this.props.effectSetActive}
-               effectSetIdCallback={this.props.effectSetId}
-
-               dragEffectAddedCallback={this.props.dragEffectAdded}
-               dragEffectStartCallback={this.props.dragEffectSetStartPos}
-               dragEffectEndCallback={this.props.dragEffectSetEndPos}
-               dragEffectsClear={this.props.dragEffectsClear}
-
-               effects={this.props.effects}
                />
       );
     });
@@ -455,21 +507,23 @@ class App extends React.Component<any>{
   render(){
     return(
       <div>
-        <Clickbox zIndex={1} 
-        disableAllEffectsCallback={this.props.disableAllEffects}
-        effectStartCallback={this.props.effectSetStart}
-        effectEndCallback={this.props.effectSetEnd}
-        effectSetActiveCallback={this.props.effectSetActive}
-        effectSetIdCallback={this.props.effectSetId}
-        dragEffectsClear={this.props.dragEffectsClear}
-        effects={this.props.effects}/>
-        <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{this.props.frameAdded('yoyo',{x:130,y:130})}}>Add shit</Button>
+        <svg style={{position:'absolute',overflow:'visible',zIndex:9999}}>
+            {this.props!.effects.data['selectionBoxEffect'].isActive && 
+              this.createSelectionRectangle(this.props!.effects.data['selectionBoxEffect'].startPos as Position,
+                                       this.props!.effects.data['selectionBoxEffect'].endPos as Position
+                                       )
+            }
+          </svg>
+        <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
+                               areaDeselectionCallback={this.props.elementsDeselected}></Clickbox_w>
+        <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{this.props.frameAdded('yoyo',{x:130,y:130})}}>Add</Button>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}
       </div>
     );
   };
 }
+const App_w1 = connect(mapElementsState, mapElementsDispatch)(App);
+const App_w = connect(mapEffectsState, mapEffectsDispatch)(App_w1);
 
-const App_w = connect(mapState, mapDispatch)(App);
 export default App_w;
