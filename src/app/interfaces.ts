@@ -31,11 +31,12 @@ interface EffectType {
 interface State{
     frames?:FrameType,
     links?:LinkType[],
-    ids?:number[]
+    ids?:number[],
+    editId?:number|null
   }
 interface Payload{
     ids?:number[],
-    id?:number,
+    id?:number|null,
     id1?:number,
     id2?:number,
     label?:string,

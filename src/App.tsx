@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { DetailedHTMLProps } from 'react';
 import logo from './logo.svg';
 import './App.scss';
 import {Button} from 'react-bootstrap';
@@ -6,10 +6,19 @@ import '../node_modules/bootstrap/scss/bootstrap.scss'
 import ReactDOM from 'react-dom';
 import {useState,useEffect,useRef} from 'react'
 
-import {State,LinkType,Position,Position4,FrameType,EffectType,OverlayEffectTypes} from './app/interfaces'
+import {State,LinkType,Position,Position4,FrameType,EffectType,OverlayEffectTypes,OverlayEffectPayload} from './app/interfaces'
 import {connect} from 'react-redux'
-import {graphSlice,selectionSlice,overlayEffectsSlice} from './app/reducers';
+import {graphSlice,frameEditSlice,selectionSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
+
+function mapElementEditState(state:any){
+  return {
+    editId: state.frameEditReducer.editId
+  }
+}
+const mapElementEditDispatch=(dispatch:any)=>({
+  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))}
+})
 
 function mapElementsState(state:any){
   return {
@@ -25,7 +34,7 @@ const mapElementsDispatch = (dispatch:any)=>({
     frameSetSize:(id:number,size:Position)=>{dispatch(graphSlice.actions.frameSetSize({id:id,size:size}))},
     frameAdded:(label:string,position:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,position:position}))},
     framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
-    // frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
+    frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
     frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
 
     linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
@@ -35,11 +44,46 @@ const mapElementsDispatch = (dispatch:any)=>({
     elementsDeselected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsDeselected({selectedIds:selectedIds}))}
 });
 
-function mapEffectsState(state:any){
-  return {
-      effects: state.overlayEffectsReducer.effects
+function mapEffectsPseudolink(state:any){
+  return{
+    effectsDataPseudolink: state.overlayEffectsReducer.effects.data.pseudolinkEffect
   }
-};
+}
+function mapEffectsSelectionBox(state:any){
+  return{
+    effectsDataSelectionBox: state.overlayEffectsReducer.effects.data.selectionBoxEffect
+  }
+}
+function mapEffectsDrag(state:any){
+  return{
+    effectsDataDrag: state.overlayEffectsReducer.effects.data.dragEffect
+  }
+}
+function mapEffectsAll(state:any){
+  return{
+    effectsDataAll: state.overlayEffectsReducer.effects.data
+  }
+}
+//--- code above used because cleaner code below gives shallow comparison bugs in shouldComponentUpdate due to refs comparison
+// function effectMapperSelector(effectNames:string[]|'all'){
+//   if(effectNames==='all'){
+//     return((state:any)=>{
+//       return {
+//         effectsData: state.overlayEffectsReducer.effects.data
+//       }
+//     });
+//   } else {
+//     return((state:any)=>{
+//       var effectMap = new Map<string,OverlayEffectPayload>([]);
+//       effectNames.forEach((effectName)=>{
+//        effectMap.set(effectName,state.overlayEffectsReducer.effects.data[effectName]);
+//       });
+//       return {
+//         effectsData: Object.fromEntries(effectMap)
+//       }
+//     });
+//   }
+// }
 const mapEffectsDispatch = (dispatch:any) =>({
     effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
     effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
@@ -53,18 +97,7 @@ const mapEffectsDispatch = (dispatch:any) =>({
     dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))}
 });
 
-// effectSetStart={this.props.effectSetStart}
-// effectSetEnd={this.props.effectSetEnd}
-// effectSetActive={this.props.effectSetActive}
-// effectSetId={this.props.effectSetId}
-
-// dragEffectAdded={this.props.dragEffectAdded}
-// dragEffectSetStartPos={this.props.dragEffectSetStartPos}
-// dragEffectSetEndPos={this.props.dragEffectSetEndPos}
-// dragEffectsClear={this.props.dragEffectsClear}
-
-// effects={this.props.effects}
-class Frame extends React.Component<{id:Readonly<number>,text:string,position:Position,size:Position,frameH:number,frameW:number,radius:number,
+class Frame extends React.Component</*{id:Readonly<number>,text:string,position:Position,size:Position,frameH:number,frameW:number,radius:number,
                                     isSelected:boolean, zIndex:number,
                                       initCallback:any,
                                       dragCallback:any,
@@ -82,9 +115,15 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
                                       dragEffectSetStartPos:any,
                                       dragEffectsClear:any,
                                       dragEffectSetEndPos:any,
-                                      effects:any
+                                      effects:any,
+
+                                      relabelCallback:any,
+
+                                      editId:any,
+                                      frameSetEdit:any
                                     },
-                                    {}>{
+                                    {
+                                    }*/any>{
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
  contentRef = React.createRef<any>();
@@ -146,89 +185,87 @@ class Frame extends React.Component<{id:Readonly<number>,text:string,position:Po
   },
   onMouseUpElement:(e:MouseEvent)=>{
     if (e.button !== 0) return;
-    if(this.props.effects.data['pseudolinkEffect'].isActive) this.props.createLinkCallback(this.props.id);
+    if(this.props.effectsDataPseudolink.isActive) this.props.createLinkCallback(this.props.id);
   }
  }
  wrapHandlers = {
     onDoubleClick:(e:MouseEvent)=>{
-      if(this.props.isSelected){
-        this.props.deselectionCallback([]);
+      if(this.props.editId==null){
+        this.props.frameSetEdit(this.props.id);
+      } else {
+
       }
     }
  }
-
-
+ renderStyles(){
+  if(this.props.isSelected){
+    return({minHeight:this.props.frameH,
+      width:this.props.frameW,
+      textAlign:'center',
+      position:'absolute',
+      border:'2px solid',
+      color:'red',
+      left:this.props.position.x,
+      top:this.props.position.y,
+      zIndex:'100',
+      background:'white',
+      alignItems:'center',
+      padding:6,
+      userSelect:'none'});
+  } else {
+    return({minHeight:this.props.frameH,
+      width:this.props.frameW,
+      textAlign:'center',
+      position:'absolute',
+      border:'1px solid',
+      color:'black',
+      left:this.props.position.x,
+      top:this.props.position.y,
+      zIndex:'100',
+      background:'white',
+      alignItems:'center',
+      userSelect:'none'});
+  }
+ }
+ renderText(){
+  if(this.props.editId==null){
+    return(this.props.text)
+  } else {
+    return(<input type="text"></input>)
+  }
+ }
  render(){
   var pseudolink:JSX.Element = 
     <line x1={this.props.position.x+this.props.size.x/2} y1={this.props.position.y+this.props.size.y/2} 
-          x2={this.props.effects.data['pseudolinkEffect'].endPos!.x} y2={this.props.effects.data['pseudolinkEffect'].endPos!.y} style={{
-          stroke:'red',
-          strokeWidth:1,
-          cursor:'pointer',
-          zIndex:1
+          x2={this.props.effectsDataPseudolink.endPos!.x} y2={this.props.effectsDataPseudolink.endPos!.y} 
+          style={{
+            stroke:'red',
+            strokeWidth:1,
+            cursor:'pointer',
+            zIndex:1
     }}/>
-  if(this.props.isSelected){
     return(
       <div style={{zIndex:this.props.zIndex}}>
-        <div style={{minHeight:this.props.frameH,
-          width:this.props.frameW,
-          textAlign:'center',
-          position:'absolute',
-          border:'2px solid',
-          color:'red',
-          left:this.props.position.x,
-          top:this.props.position.y,
-          zIndex:'100',
-          background:'white',
-          alignItems:'center',
-          padding:6,
-          userSelect:'none'}} ref={this.wrapRef}>
+        <div style={this.renderStyles() as DetailedHTMLProps<any,any>} ref={this.wrapRef}>
               <div style={{
                 width:'100%',
                 height:'20px',
                 backgroundColor:'black',
                 cursor:'pointer'}} ref={this.handleRef}></div>
               <div style={{
-                width:'100%'}} ref={this.contentRef}>{this.props.text}</div>
+                width:'100%'}} ref={this.contentRef}>
+                  {this.renderText()}
+              </div>
       </div>
       <svg style={{position:'absolute',overflow:'visible'}}>
-          {this.props.effects.data['pseudolinkEffect'].isActive&&(this.props.effects.data['pseudolinkEffect'].id==this.props.id)&&pseudolink}
+          {this.props.effectsDataPseudolink.isActive&&(this.props.effectsDataPseudolink.id==this.props.id)&&pseudolink}
       </svg>
      </div>
     );
-  } else {
-    return(
-      <div style={{zIndex:999}}>
-        <div style={{minHeight:this.props.frameH,
-          width:this.props.frameW,
-          textAlign:'center',
-          position:'absolute',
-          border:'1px solid',
-          color:'black',
-          left:this.props.position.x,
-          top:this.props.position.y,
-          zIndex:'100',
-          background:'white',
-          alignItems:'center',
-          userSelect:'none'}} ref={this.wrapRef}>
-              <div style={{
-                width:'100%',
-                height:'40px',
-                backgroundColor:'black',
-                cursor:'pointer'}} ref={this.handleRef}></div>
-              <div style={{
-                width:'100%',padding:6}} ref={this.contentRef}>{this.props.text}</div>
-      </div>
-      <svg style={{position:'absolute',overflow:'visible'}}>
-        {this.props.effects.data['pseudolinkEffect'].isActive&&(this.props.effects.data['pseudolinkEffect'].id==this.props.id)&&pseudolink}
-      </svg>
-     </div>
-    );
-  }
-  
  }
 }
-const Frame_w = connect(mapEffectsState, mapEffectsDispatch)(Frame);
+const Frame_w1 = connect(mapEffectsPseudolink, mapEffectsDispatch)(Frame);
+const Frame_w = connect(mapElementEditState, mapElementEditDispatch)(Frame_w1);
 
 class Line extends React.Component<{x1:number,y1:number,x2:number,y2:number,deleteCallback:any,id1:number,id2:number},{}>{
   ref = React.createRef<any>();
@@ -281,7 +318,7 @@ class Clickbox extends React.Component<{zIndex:number,
                                         effectSetActive:any,
                                         effectSetId:any,
                                         dragEffectsClear:any,
-                                        effects:EffectType,
+                                        effectsDataSelectionBox:any,
                                       
                                         areaSelectionCallback:any,
                                         areaDeselectionCallback:any}>{
@@ -291,10 +328,6 @@ class Clickbox extends React.Component<{zIndex:number,
     super(props);
   }
   clickboxHandlers={
-    // onDoubleClick:(e:MouseEvent)=>{
-    //   if (e.button !== 0) return
-    //   this.props.areaDeselectionCallback([]);
-    // },
     onMouseDown:(e:MouseEvent)=>{
       if (e.button !== 0) return
       this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
@@ -304,8 +337,8 @@ class Clickbox extends React.Component<{zIndex:number,
       this.props.effectSetActive('selectionBoxEffect',true); //todo: 4 actions -> 1 action
     },
     onMouseUp:(e:MouseEvent)=>{
-      if(this.props.effects.data['selectionBoxEffect'].isActive){
-        this.props.areaSelectionCallback(this.props.effects.data['selectionBoxEffect'].startPos,this.props.effects.data['selectionBoxEffect'].endPos);
+      if(this.props.effectsDataSelectionBox.isActive){ //todo: unlink effects isActive from positions to fix redundant clickbox redraw
+        this.props.areaSelectionCallback(this.props.effectsDataSelectionBox.startPos,this.props.effectsDataSelectionBox.endPos);
       }
       this.props.disableAllEffects();
       this.props.dragEffectsClear();
@@ -313,12 +346,10 @@ class Clickbox extends React.Component<{zIndex:number,
    }
    componentDidMount(){
     (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    // (this.clickboxRef.current)!.addEventListener('dblclick', this.clickboxHandlers.onDoubleClick);
     document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
   }
   componentWillUnmount(){
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    // (this.clickboxRef.current)!.removeEventListener('dblclick', this.clickboxHandlers.onDoubleClick);
     document.removeEventListener('mouseup', this.clickboxHandlers.onMouseUp);
   }
   render(){
@@ -329,7 +360,7 @@ class Clickbox extends React.Component<{zIndex:number,
     );
   }
 }
-const Clickbox_w = connect(mapEffectsState, mapEffectsDispatch)(Clickbox);
+const Clickbox_w = connect(mapEffectsSelectionBox, mapEffectsDispatch)(Clickbox);
 
 function posOp(a:Position,operation:string,b:Position){
   var newPos:Position = {x:0,y:0};
@@ -344,31 +375,38 @@ function posOp(a:Position,operation:string,b:Position){
   }
   return(newPos);
 }
-class App extends React.Component<any>{
-  frameW = 150;
-  frameH = 40;
-
+class Tracker extends React.Component<any>{
   constructor(props:any){
     super(props);
   }
-  selectElementsInArea=(startPos:Position,endPos:Position)=>{
-    function verticePass(/*startPos:Position,endPos:Position*/ verticePos:Position,shift:Position){
-      return (((verticePos.x+shift.x)>startPos.x && (verticePos.x+shift.x)<endPos.x) || ((verticePos.x+shift.x)<startPos.x && (verticePos.x+shift.x)>endPos.x))
-      && (((verticePos.y+shift.y)>startPos.y && (verticePos.y+shift.y)<endPos.y)||((verticePos.y+shift.y)<startPos.y && (verticePos.y+shift.y)>endPos.y))
+  onMouseMove=(e:MouseEvent)=>{
+    if(this.props.effectsDataAll['pseudolinkEffect'].isActive){
+      this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
+        y: e.pageY});
     }
-    var arr = this.props.framesKeys.map((id:number) => {
-      var frame = this.props.framesData[id];
-      if(verticePass(frame.position,{x:0,y:0})
-        ||verticePass(frame.position,{x:frame.size.x,y:0})
-        ||verticePass(frame.position,{x:frame.size.x,y:frame.size.y})
-        ||verticePass(frame.position,{x:0,y:frame.size.y})
-      ){
-        return(id);
-      }
-    })
-    this.props.elementsDeselected([]);
-    this.props.elementsSelected(arr);
+    if(this.props.effectsDataAll['selectionBoxEffect'].isActive){
+      this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
+        y: e.pageY});
+    }
+    if(this.props.effectsDataAll['dragEffect'].isActive){
+      this.props.effectsDataAll['dragEffect'].keys.forEach((keyId:number)=>{
+        this.props.frameMoved(keyId,posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataAll.dragEffect.data[keyId].startPos));
+      });
+    }
   }
+  componentDidMount(){
+    document.addEventListener('mousemove',this.onMouseMove);
+  }
+  componentWillUnmount(){
+    document.removeEventListener('mousemove',this.onMouseMove);
+  }
+  render(){
+    return(false);
+  }
+}
+const Tracker_w = connect(mapEffectsAll, mapEffectsDispatch)(Tracker);
+
+class SelectionBox extends React.Component<any>{
   createSelectionRectangle(startPosition:Position,endPosition:Position){
     return(
       <svg style={{position:'absolute',overflow:'visible'}}>
@@ -403,36 +441,52 @@ class App extends React.Component<any>{
       </svg>
     );
   }
-   globalHandlers={
-    onMouseMove:(e:MouseEvent)=>{
-      this.props.effects.keys.forEach((effectKey:OverlayEffectTypes['types'])=>{
-        if(this.props.effects.data[effectKey].isActive){
-          this.props.effectSetEnd(effectKey,{x: e.pageX,
-            y: e.pageY});
-        }
-      });
-      if(this.props.effects.data['dragEffect'].isActive){
-        this.props.effects.data['dragEffect'].draggedFrames.keys.forEach((keyId:number)=>{
-          this.props.frameMoved(keyId,posOp({x:e.pageX,y:e.pageY},'-',this.props.effects.data['dragEffect'].draggedFrames.data[keyId].startPos));
-        });
-      }
-
-    },
-    onKeyDown:(e:KeyboardEvent)=>{
-      if(e.key == 'Delete'){
-        var idsToDelete = [] as number[];
-        this.props.ids!.forEach((selectedId:number)=>idsToDelete.push(selectedId));
-        this.props.framesRemoved(idsToDelete);
-      }
-    }
-   }
-  componentDidMount(){
-    document.addEventListener('keydown',this.globalHandlers.onKeyDown);
-    document.addEventListener('mousemove',this.globalHandlers.onMouseMove);
+  render() {
+    return(
+      <svg style={{position:'absolute',overflow:'visible',zIndex:this.props.zIndex}}>
+            {this.props!.effectsDataSelectionBox!.isActive && 
+              this.createSelectionRectangle(this.props!.effectsDataSelectionBox.startPos as Position,
+                                       this.props!.effectsDataSelectionBox.endPos as Position
+                                       )
+            }
+          </svg>
+    );
   }
-  componentWillUnmount(){
-    document.addEventListener('keydown',this.globalHandlers.onKeyDown);
-    document.addEventListener('mousemove',this.globalHandlers.onMouseMove);
+}
+const SelectionBox_w = connect(mapEffectsSelectionBox, mapEffectsDispatch)(SelectionBox);
+
+class App extends React.Component<any>{
+  frameW = 150;
+  frameH = 40;
+
+  constructor(props:any){
+    super(props);
+  }
+
+  selectElementsInArea=(startPos:Position,endPos:Position)=>{
+    function verticePass(/*startPos:Position,endPos:Position*/ verticePos:Position,shift:Position){
+      return (((verticePos.x+shift.x)>startPos.x && (verticePos.x+shift.x)<endPos.x) || ((verticePos.x+shift.x)<startPos.x && (verticePos.x+shift.x)>endPos.x))
+      && (((verticePos.y+shift.y)>startPos.y && (verticePos.y+shift.y)<endPos.y)||((verticePos.y+shift.y)<startPos.y && (verticePos.y+shift.y)>endPos.y))
+    }
+    var arr = this.props.framesKeys.map((id:number) => {
+      var frame = this.props.framesData[id];
+      if(verticePass(frame.position,{x:0,y:0})
+        ||verticePass(frame.position,{x:frame.size.x,y:0})
+        ||verticePass(frame.position,{x:frame.size.x,y:frame.size.y})
+        ||verticePass(frame.position,{x:0,y:frame.size.y})
+      ){
+        return(id);
+      }
+    })
+    this.props.elementsDeselected([]);
+    this.props.elementsSelected(arr);
+  }
+  jointDecorator(x1:number,y1:number,x2:number,y2:number,frameW1:number,frameH1:number,frameW2:number,frameH2:number){
+    x1+=frameW1/2;
+    y1+=frameH1/2;
+    x2+=frameW2/2;
+    y2+=frameH2/2;
+    return {x1,y1,x2,y2}
   }
   renderLinksFromProps(zIndex:number){
     var links = this.props.links.map((link:LinkType) =>{
@@ -461,14 +515,31 @@ class App extends React.Component<any>{
     });
     return(links);
   }
+  
+   globalHandlers={
+    onKeyDown:(e:KeyboardEvent)=>{
+      if(e.key == 'Delete'){
+        var idsToDelete = [] as number[];
+        this.props.ids!.forEach((selectedId:number)=>idsToDelete.push(selectedId));
+        this.props.framesRemoved(idsToDelete);
+      }
+    }
+   }
+  componentDidMount(){
+    document.addEventListener('keydown',this.globalHandlers.onKeyDown);
+  }
+  componentWillUnmount(){
+    document.addEventListener('keydown',this.globalHandlers.onKeyDown);
+  }
+  createLinkCallback=(fromId:number)=>{
+    console.log(this.props.effectsDataPseudolink.id);
+    this.props.linkAdded(fromId,this.props.effectsDataPseudolink.id);
+  }
   selectionCallback=(ids:number[])=>{
     this.props.elementsSelected(ids);
   }
   deselectionCallback=(ids:number[])=>{
     this.props.elementsDeselected(ids);
-  }
-  createLinkCallback=(fromId:number)=>{
-      this.props.linkAdded(fromId,this.props.effects.data['pseudolinkEffect'].id);
   }
   renderFramesFromProps(zIndex:number):JSX.Element[]{
     var arr = this.props.framesKeys.map((id:number) =>{
@@ -491,39 +562,30 @@ class App extends React.Component<any>{
                selectionCallback={this.selectionCallback}
                deselectionCallback={this.deselectionCallback}
                createLinkCallback={this.createLinkCallback}
+
+               relabelCallback={this.props.frameRelabelled}
                />
       );
     });
     return(arr);
   }
-  
-  jointDecorator(x1:number,y1:number,x2:number,y2:number,frameW1:number,frameH1:number,frameW2:number,frameH2:number){
-    x1+=frameW1/2;
-    y1+=frameH1/2;
-    x2+=frameW2/2;
-    y2+=frameH2/2;
-    return {x1,y1,x2,y2}
-  }
+
   render(){
     return(
       <div>
-        <svg style={{position:'absolute',overflow:'visible',zIndex:9999}}>
-            {this.props!.effects.data['selectionBoxEffect'].isActive && 
-              this.createSelectionRectangle(this.props!.effects.data['selectionBoxEffect'].startPos as Position,
-                                       this.props!.effects.data['selectionBoxEffect'].endPos as Position
-                                       )
-            }
-          </svg>
+        <Tracker_w frameMoved={this.props.frameMoved}/>
+
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
-                               areaDeselectionCallback={this.props.elementsDeselected}></Clickbox_w>
+                               areaDeselectionCallback={this.props.elementsDeselected}/>
         <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{this.props.frameAdded('yoyo',{x:130,y:130})}}>Add</Button>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}
+        <SelectionBox_w zIndex={100}/>
       </div>
     );
   };
 }
 const App_w1 = connect(mapElementsState, mapElementsDispatch)(App);
-const App_w = connect(mapEffectsState, mapEffectsDispatch)(App_w1);
+const App_w = connect(mapEffectsPseudolink, mapEffectsDispatch)(App_w1);
 
 export default App_w;

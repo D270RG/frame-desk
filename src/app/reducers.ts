@@ -19,7 +19,14 @@ const graphInitialState:State = {
   links: [
     { frame1: 0, frame2: 1},
     { frame1: 1, frame2: 2},
-  ]
+  ],
+  editId:null
+}
+const frameEditInitialState:any = {
+  editId:null,
+  dragEffect:{
+    isActive:false,
+  }
 }
 const selectionInitialState:State = {
   ids: [] as number[]
@@ -27,45 +34,35 @@ const selectionInitialState:State = {
 const overlayEffectsInitialState:any ={
   effects:{
       data:{
-        'pseudolinkEffect':{
-          id:-1,
+        pseudolinkEffect:{
+          id:0,
           isActive:false,
           startPos:{x:0,y:0},
           endPos:{x:0,y:0}
         },
-        'selectionBoxEffect':{
+        selectionBoxEffect:{
           isActive:false,
           startPos:{x:0,y:0},
           endPos:{x:0,y:0}
         },
-        'dragEffect':{
-          isActive:false,
-          draggedFrames:{
-            data:{
-              // 0:{
-              //   startPos:{x:0,y:0},
-              //   endPos:{x:0,y:0}
-              // }
-            },
-              keys:[/*0*/]
-          }
+        dragEffect:{
+          data:{
+            // 0:{
+            //   startPos:{x:0,y:0},
+            //   endPos:{x:0,y:0}
+            // }
+          },
+            keys:[/*0*/]
         }
-      },
-      keys:['pseudolinkEffect','selectionBoxEffect','dragEffect']
+      }
   }
 }
 const overlayEffectsSlice = createSlice({
   name:'overlayEffects',
   initialState:overlayEffectsInitialState,
   reducers:{
-    addEffect:(state, action:PayloadAction<OverlayEffectPayload>)=>{
-      // state.effects!.data[action.type] = {
-        //TODO
-      // };
-      // state.effects!.keys.push(action.payload.type);
-    },
     disableAllEffects:(state, action:PayloadAction<OverlayEffectPayload>)=>{
-      state.effects.keys.forEach((effectKey:string)=>{
+      Object.keys(state.effects.data).forEach((effectKey:string)=>{
         state.effects.data[effectKey].isActive=false;
       });
     },
@@ -83,21 +80,21 @@ const overlayEffectsSlice = createSlice({
     },
     //specific actions
     dragEffectAdded:(state, action:PayloadAction<OverlayEffectPayload>)=>{
-      state.effects!.data['dragEffect'].draggedFrames.data[action.payload.id as number] = {
+      state.effects!.data['dragEffect'].data[action.payload.id as number] = {
         startPos:action.payload.startPos,
         endPos:action.payload.endPos
       }
-      state.effects!.data['dragEffect'].draggedFrames.keys.push(action.payload.id as number);
+      state.effects!.data['dragEffect'].keys.push(action.payload.id as number);
     },
     dragEffectSetEndPos:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data['dragEffect'].draggedFrames.data[action.payload.id as number].endPos = action.payload.endPos
     },
     dragEffectSetStartPos:(state, action:PayloadAction<OverlayEffectPayload>)=>{
-      state.effects!.data['dragEffect'].draggedFrames.data[action.payload.id as number].endPos = action.payload.endPos
+      state.effects!.data['dragEffect'].data[action.payload.id as number].endPos = action.payload.endPos
     },
     dragEffectsClear:(state, action:PayloadAction<OverlayEffectPayload>)=>{
-      state.effects!.data['dragEffect'].draggedFrames.keys.length = 0;
-      state.effects!.data['dragEffect'].draggedFrames.data = {};
+      state.effects!.data['dragEffect'].keys.length = 0;
+      state.effects!.data['dragEffect'].data = {};
     }
     // effectUnsetIds:(state,action:PayloadAction<Payload>)=>{
     //   if(action.payload.selectedIds!.length===0){
@@ -142,16 +139,15 @@ const graphSlice = createSlice({
       });
       state.frames!.keys = state.frames!.keys.filter((key) => !action.payload.ids!.includes(key));
     },
-    // frameRelabelled:(state, action:PayloadAction<Payload>)=>{
-    //   state.frames!.at(action.payload.id as number)!.label = action.payload.label as string;
-    // },
+    frameRelabelled:(state, action:PayloadAction<Payload>)=>{
+      state.frames!.data[action.payload.id as number]!.label = action.payload.label as string;
+    },
     frameMoved:(state, action:PayloadAction<Payload>)=>{
       state.frames!.data[action.payload.id as number].position = {
         x: action.payload.position!.x,
         y: action.payload.position!.y
       }
     },
-
     linkAdded:(state, action:PayloadAction<Payload>)=>{
       if(action.payload.link!.frame1>action.payload.link!.frame2){ 
         var buffer = action.payload.link!.frame2;
@@ -179,6 +175,15 @@ const graphSlice = createSlice({
     }
   }
 });
+const frameEditSlice = createSlice({
+  name:'frameEditSlice',
+  initialState:frameEditInitialState,
+  reducers:{
+    frameSetEdit:(state, action:PayloadAction<Payload>)=>{
+      state.editId = action.payload!.id
+    }
+  }
+})
 const selectionSlice = createSlice({
   name:'selectionReducers',
   initialState:selectionInitialState,
@@ -200,4 +205,4 @@ const selectionSlice = createSlice({
     }
   }
 });
-export {graphSlice,selectionSlice,overlayEffectsSlice};
+export {graphSlice,frameEditSlice,selectionSlice,overlayEffectsSlice};
