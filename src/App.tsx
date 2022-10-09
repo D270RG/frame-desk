@@ -127,9 +127,29 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
  contentRef = React.createRef<any>();
+ relabelRef = React.createRef<any>();
  constructor(props:any){
   super(props);
  }
+ resize(){
+  console.log('resize from',this.props.size,' to ',{x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight});
+  var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
+  this.props.initCallback(this.props.id,size);
+ }
+ shouldComponentUpdate(nextProps:any,nextState:any){
+  if(nextProps.editId!=this.props.id && this.props.editId==this.props.id){
+    if(this.relabelRef.current.value.length!=0){
+      this.props.relabelCallback(this.props.id,this.relabelRef.current.value);
+    }
+  }
+  if(nextProps.editId==this.props.id && this.props.editId!=this.props.id){
+    this.resize();
+  }
+  if(nextProps.size.y!=(this.wrapRef.current as any)!.clientHeight){
+    this.resize();
+  }
+  return(true);
+  }
  componentDidMount(){
     //handle box binding
     // (this.handleRef.current)!.addEventListener('mouseup', this.handleHandlers.onMouseUp);
@@ -142,9 +162,7 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
     //wrap box binding
     (this.wrapRef.current)!.addEventListener('dblclick', this.wrapHandlers.onDoubleClick);
 
-
-    var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
-    this.props.initCallback(this.props.id,size);
+    this.resize();
  }
  componentWillUnmount(){
   //handle box unbinding
@@ -191,9 +209,7 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
  wrapHandlers = {
     onDoubleClick:(e:MouseEvent)=>{
       if(this.props.editId==null){
-        this.props.frameSetEdit(this.props.id);
-      } else {
-
+        this.props.frameSetEdit(this.props.id);              
       }
     }
  }
@@ -228,10 +244,10 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
   }
  }
  renderText(){
-  if(this.props.editId==null){
-    return(this.props.text)
+  if(this.props.editId===this.props.id){
+    return(<textarea style={{boxSizing:'border-box',width:'100%'}} rows={5} ref={this.relabelRef} defaultValue={this.props.text}/>)
   } else {
-    return(<input type="text"></input>)
+    return(this.props.text)
   }
  }
  render(){
@@ -253,7 +269,7 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
                 backgroundColor:'black',
                 cursor:'pointer'}} ref={this.handleRef}></div>
               <div style={{
-                width:'100%'}} ref={this.contentRef}>
+                width:'100%',wordBreak:'break-word'}} ref={this.contentRef}>
                   {this.renderText()}
               </div>
       </div>
@@ -311,7 +327,7 @@ class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
   }
 }
 
-class Clickbox extends React.Component<{zIndex:number,
+class Clickbox extends React.Component</*{zIndex:number,
                                         disableAllEffects:any,
                                         effectSetStart:any,
                                         effectSetEnd:any,
@@ -321,7 +337,7 @@ class Clickbox extends React.Component<{zIndex:number,
                                         effectsDataSelectionBox:any,
                                       
                                         areaSelectionCallback:any,
-                                        areaDeselectionCallback:any}>{
+                                        areaDeselectionCallback:any}*/any>{
   selectionBoxRef = React.createRef<HTMLDivElement>();
   clickboxRef = React.createRef<HTMLDivElement>();
   constructor(props:any){
@@ -330,11 +346,16 @@ class Clickbox extends React.Component<{zIndex:number,
   clickboxHandlers={
     onMouseDown:(e:MouseEvent)=>{
       if (e.button !== 0) return
-      this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
-        y: e.pageY});
-      this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
-        y: e.pageY});
-      this.props.effectSetActive('selectionBoxEffect',true); //todo: 4 actions -> 1 action
+      if(this.props.editId!==null){
+        this.props.frameSetEdit(null);
+      } else {
+        this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
+          y: e.pageY});
+        this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
+          y: e.pageY});
+        this.props.effectSetActive('selectionBoxEffect',true);
+      }
+       //todo: 4 actions -> 1 action
     },
     onMouseUp:(e:MouseEvent)=>{
       if(this.props.effectsDataSelectionBox.isActive){ //todo: unlink effects isActive from positions to fix redundant clickbox redraw
@@ -360,7 +381,8 @@ class Clickbox extends React.Component<{zIndex:number,
     );
   }
 }
-const Clickbox_w = connect(mapEffectsSelectionBox, mapEffectsDispatch)(Clickbox);
+const Clickbox_w1 = connect(mapEffectsSelectionBox, mapEffectsDispatch)(Clickbox);
+const Clickbox_w = connect(mapElementEditState, mapElementEditDispatch)(Clickbox_w1);
 
 function posOp(a:Position,operation:string,b:Position){
   var newPos:Position = {x:0,y:0};
