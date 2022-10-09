@@ -141,6 +141,7 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
     if(this.relabelRef.current.value.length!=0){
       this.props.relabelCallback(this.props.id,this.relabelRef.current.value);
     }
+    this.resize();
   }
   if(nextProps.editId==this.props.id && this.props.editId!=this.props.id){
     this.resize();
@@ -180,15 +181,17 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
  handleHandlers = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
-    this.props.dragEffectAdded(this.props.id,
-                  {x:e.pageX-this.props.position.x,y:e.pageY-this.props.position.y}, //start
-                  {x:e.pageX,y:e.pageY}); //end
-    this.props.effectSetActive('dragEffect',true); //todo: 4 actions -> 1 action
-  },
+    this.props.dragCallback(this.props.id,e.pageX,e.pageY);
+  //   this.props.dragEffectAdded(0,
+  //                 {x:e.pageX-this.props.position.x,y:e.pageY-this.props.position.y}, 
+  //                 {x:e.pageX,y:e.pageY});
+  //   this.props.effectSetActive('dragEffect',true); 
+  // },
+
   // onMouseUp:(e:MouseEvent)=>{
   //  this.props.effectSetActive('dragEffect',false);
   //  this.props.dragEffectsClear();
-  // }
+  }
  }
  contentHandlers = {
   onMouseDown:(e:MouseEvent)=>{
@@ -281,7 +284,8 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
  }
 }
 const Frame_w1 = connect(mapEffectsPseudolink, mapEffectsDispatch)(Frame);
-const Frame_w = connect(mapElementEditState, mapElementEditDispatch)(Frame_w1);
+const Frame_w2 = connect(mapEffectsSelectionBox, mapEffectsDispatch)(Frame_w1);
+const Frame_w = connect(mapElementEditState, mapElementEditDispatch)(Frame_w2);
 
 class Line extends React.Component<{x1:number,y1:number,x2:number,y2:number,deleteCallback:any,id1:number,id2:number},{}>{
   ref = React.createRef<any>();
@@ -347,6 +351,7 @@ class Clickbox extends React.Component</*{zIndex:number,
     onMouseDown:(e:MouseEvent)=>{
       if (e.button !== 0) return
       if(this.props.editId!==null){
+        console.log('deedit');
         this.props.frameSetEdit(null);
       } else {
         this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
@@ -490,15 +495,13 @@ class App extends React.Component<any>{
       return (((verticePos.x+shift.x)>startPos.x && (verticePos.x+shift.x)<endPos.x) || ((verticePos.x+shift.x)<startPos.x && (verticePos.x+shift.x)>endPos.x))
       && (((verticePos.y+shift.y)>startPos.y && (verticePos.y+shift.y)<endPos.y)||((verticePos.y+shift.y)<startPos.y && (verticePos.y+shift.y)>endPos.y))
     }
-    var arr = this.props.framesKeys.map((id:number) => {
+    var arr = this.props.framesKeys.filter((id:number) => {
       var frame = this.props.framesData[id];
-      if(verticePass(frame.position,{x:0,y:0})
+      return(verticePass(frame.position,{x:0,y:0})
         ||verticePass(frame.position,{x:frame.size.x,y:0})
         ||verticePass(frame.position,{x:frame.size.x,y:frame.size.y})
         ||verticePass(frame.position,{x:0,y:frame.size.y})
-      ){
-        return(id);
-      }
+      )
     })
     this.props.elementsDeselected([]);
     this.props.elementsSelected(arr);
@@ -563,6 +566,21 @@ class App extends React.Component<any>{
   deselectionCallback=(ids:number[])=>{
     this.props.elementsDeselected(ids);
   }
+  dragCallback=(fromId:number,eventX:number,eventY:number)=>{
+    if(this.props.ids.includes(fromId)){
+      this.props.ids.forEach((selectedId:number)=>{//bad naming
+        console.log('id',selectedId,this.props.framesData[selectedId]);
+        this.props.dragEffectAdded(selectedId,
+                  {x:eventX-this.props.framesData[selectedId].position.x,y:eventY-this.props.framesData[selectedId].position.y}, 
+                  {x:eventX,y:eventY});
+        });
+    } else {
+      this.props.dragEffectAdded(fromId,
+        {x:eventX-this.props.framesData[fromId].position.x,y:eventY-this.props.framesData[fromId].position.y}, 
+        {x:eventX,y:eventY});
+    }
+    this.props.effectSetActive('dragEffect',true); 
+  }
   renderFramesFromProps(zIndex:number):JSX.Element[]{
     var arr = this.props.framesKeys.map((id:number) =>{
       var isSelected = false;
@@ -579,7 +597,7 @@ class App extends React.Component<any>{
                        radius={24} 
                isSelected={isSelected}
                initCallback={this.props.frameSetSize} 
-               dragCallback={this.props.frameMoved}
+               dragCallback={this.dragCallback}
                deleteCallback={this.props.frameRemoved}
                selectionCallback={this.selectionCallback}
                deselectionCallback={this.deselectionCallback}
@@ -602,7 +620,7 @@ class App extends React.Component<any>{
         <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{this.props.frameAdded('yoyo',{x:130,y:130})}}>Add</Button>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}
-        <SelectionBox_w zIndex={100}/>
+        <SelectionBox_w zIndex={1}/>
       </div>
     );
   };
