@@ -1,18 +1,18 @@
 import { createSlice,configureStore  } from "@reduxjs/toolkit"
 import type { PayloadAction} from '@reduxjs/toolkit'
-import type {Action,State,Payload,Position,OverlayEffectPayload} from './interfaces'
+import type {Action,State,Payload,Position,OverlayEffectPayload,FrameElement} from './interfaces'
 
-function nextframeId(frames:Array<any>) {
-  const maxId = frames.reduce((maxId, frame) => Math.max(frame.id, maxId), -1)
+function nextframeId(framesKeys:any) {
+  const maxId = framesKeys.reduce((maxId:any, frameKey:any) => Math.max(frameKey, maxId), -1)
   return maxId + 1
 }
 
 const graphInitialState:State = {
   frames:{
     data:{
-      0:{label: 'Learn React', position:{x:100,y:100},size:{x:0,y:0}},
-      1:{label: 'Learn Redux! Very large text type some more here, also breaks many lines', position:{x:200,y:500},size:{x:0,y:0}},
-      2:{label: 'Build something fun! Large text', position:{x:500,y:100},size:{x:0,y:0}}
+      0:{label: 'Example text', position:{x:100,y:100},size:{x:0,y:0}},
+      1:{label: 'Another example text', position:{x:200,y:500},size:{x:0,y:0}},
+      2:{label: 'Very large multiline example text, hello!', position:{x:500,y:100},size:{x:0,y:0}}
     },
     keys:[0,1,2]
   },
@@ -35,7 +35,7 @@ const overlayEffectsInitialState:any ={
   effects:{
       data:{
         pseudolinkEffect:{
-          id:0,
+          id:-1,
           isActive:false,
           startPos:{x:0,y:0},
           endPos:{x:0,y:0}
@@ -116,28 +116,39 @@ const graphSlice = createSlice({
   initialState:graphInitialState,
   reducers:{
     frameSetSize:(state, action:PayloadAction<Payload>)=>{
-      state.frames!.data[action.payload.id as number].size = action.payload.size as Position
+      if(state.frames!.keys.includes(action.payload!.id as number)){
+        state.frames!.data[action.payload.id as number].size = action.payload.size as Position //dirty hack
+      }
     },
     frameAdded:(state, action:PayloadAction<Payload>)=>{
       var nextFrameId:number = nextframeId(state.frames!.keys as number[]);
-      state.frames!.data[nextFrameId] = 
-        {
-          label: action.payload.label as string,
-          position: action.payload.position as Position,
-          size: {x:0,y:0}
+        if(action.payload.size != undefined){
+          state.frames!.data[nextFrameId] = 
+            {
+              label: action.payload.label as string,
+              position: action.payload.position as Position,
+              size: action.payload.size as Position
+            }
+          state.frames!.keys.push(nextFrameId);
+        } else {
+          state.frames!.data[nextFrameId] = 
+            {
+              label: action.payload.label as string,
+              position: action.payload.position as Position,
+              size: {x:0,y:0}
+            }
+          state.frames!.keys.push(nextFrameId);
         }
-      state.frames!.keys.push(nextFrameId);
     },
     framesRemoved:(state, action:PayloadAction<Payload>)=>{
       state.links = state.links!.filter(link=>
         !(action.payload.ids!.includes(link.frame1) || action.payload.ids!.includes(link.frame2))
       ); 
-
+      state.frames!.keys = state.frames!.keys.filter((key) => !action.payload.ids!.includes(key));
       action.payload.ids!.forEach((id)=>{
         delete state.frames!.data[id];
-
       });
-      state.frames!.keys = state.frames!.keys.filter((key) => !action.payload.ids!.includes(key));
+
     },
     frameRelabelled:(state, action:PayloadAction<Payload>)=>{
       state.frames!.data[action.payload.id as number]!.label = action.payload.label as string;
@@ -193,12 +204,10 @@ const selectionSlice = createSlice({
     },
     elementsDeselected:(state,action:PayloadAction<Payload>)=>{
       if(action.payload.selectedIds!.length===0){
-        console.log('deselect all');
         state.ids!.length=0;
       } else {
-        console.log('deselect id',action.payload.selectedIds);
-        state.ids!.filter((id:number)=>(
-          action.payload.selectedIds!.includes(id)
+        state.ids = state.ids!.filter((id:number)=>(
+          !action.payload.selectedIds!.includes(id)
           )
         ); 
       }

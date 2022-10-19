@@ -1,0 +1,54 @@
+$primaryColor: rgb(40, 52, 73);
+$secondaryColor: rgb(83, 107, 148);
+$outlineColor: rgba(116, 135, 169, 0.556);
+$textColor:rgb(166, 187, 224);
+$frameMinWidth: 150px;
+$frameMinHeight: 40px;
+body{
+
+}
+
+.frame{
+    border-radius:10px;
+    &.wrap{
+      width:$frameMinWidth;
+      min-height:$frameMinHeight;
+      text-align:center;
+      position: absolute;
+      border:none;
+      z-index:100;
+      background:$primaryColor;
+      align-items:center;
+      user-select:none;
+        &.active{
+            color: $outlineColor;
+            outline: 8px solid;
+        }
+    }
+    &.handle{
+        width:100%;
+        height:20px;
+        border-bottom-left-radius: 0px;
+        border-bottom-right-radius: 0px;
+        background-color:$secondaryColor;
+        cursor:pointer;
+    }
+    &.text{
+        width:100%;
+        color:$textColor;
+        word-break: break-word;
+        padding: 8px;
+    }
+}
+.line,#svg-line{
+    stroke: $secondaryColor;
+    stroke-width: 3;
+    cursor: pointer;
+    pointer-events: auto;
+    z-index:1
+}
+#svg-selectionBox{
+    stroke: $secondaryColor;
+    stroke-dasharray: 5;
+    stroke-width:1;
+}

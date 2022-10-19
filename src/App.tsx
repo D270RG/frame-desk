@@ -6,7 +6,7 @@ import '../node_modules/bootstrap/scss/bootstrap.scss'
 import ReactDOM from 'react-dom';
 import {useState,useEffect,useRef} from 'react'
 
-import {State,LinkType,Position,Position4,FrameType,EffectType,OverlayEffectTypes,OverlayEffectPayload} from './app/interfaces'
+import {State,LinkType,Position,Position4,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload} from './app/interfaces'
 import {connect} from 'react-redux'
 import {graphSlice,frameEditSlice,selectionSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
@@ -32,7 +32,7 @@ function mapElementsState(state:any){
 }
 const mapElementsDispatch = (dispatch:any)=>({ 
     frameSetSize:(id:number,size:Position)=>{dispatch(graphSlice.actions.frameSetSize({id:id,size:size}))},
-    frameAdded:(label:string,position:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,position:position}))},
+    frameAdded:(label:string,position:Position,size?:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,position:position,size:size}))},
     framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
     frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
     frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
@@ -132,7 +132,6 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
   super(props);
  }
  resize(){
-  console.log('resize from',this.props.size,' to ',{x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight});
   var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
   this.props.initCallback(this.props.id,size);
  }
@@ -146,8 +145,10 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
   if(nextProps.editId==this.props.id && this.props.editId!=this.props.id){
     this.resize();
   }
-  if(nextProps.size.y!=(this.wrapRef.current as any)!.clientHeight){
-    this.resize();
+  if(nextProps!=undefined){
+    if(nextProps.size.y!=(this.wrapRef.current as any)!.clientHeight){
+      this.resize();
+    }
   }
   return(true);
   }
@@ -216,36 +217,6 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
       }
     }
  }
- renderStyles(){
-  if(this.props.isSelected){
-    return({minHeight:this.props.frameH,
-      width:this.props.frameW,
-      textAlign:'center',
-      position:'absolute',
-      border:'2px solid',
-      color:'red',
-      left:this.props.position.x,
-      top:this.props.position.y,
-      zIndex:'100',
-      background:'white',
-      alignItems:'center',
-      padding:6,
-      userSelect:'none'});
-  } else {
-    return({minHeight:this.props.frameH,
-      width:this.props.frameW,
-      textAlign:'center',
-      position:'absolute',
-      border:'1px solid',
-      color:'black',
-      left:this.props.position.x,
-      top:this.props.position.y,
-      zIndex:'100',
-      background:'white',
-      alignItems:'center',
-      userSelect:'none'});
-  }
- }
  renderText(){
   if(this.props.editId===this.props.id){
     return(<textarea style={{boxSizing:'border-box',width:'100%'}} rows={5} ref={this.relabelRef} defaultValue={this.props.text}/>)
@@ -257,22 +228,18 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
   var pseudolink:JSX.Element = 
     <line x1={this.props.position.x+this.props.size.x/2} y1={this.props.position.y+this.props.size.y/2} 
           x2={this.props.effectsDataPseudolink.endPos!.x} y2={this.props.effectsDataPseudolink.endPos!.y} 
-          style={{
-            stroke:'red',
-            strokeWidth:1,
-            cursor:'pointer',
-            zIndex:1
-    }}/>
+          id = 'svg-line'
+    />
     return(
       <div style={{zIndex:this.props.zIndex}}>
-        <div style={this.renderStyles() as DetailedHTMLProps<any,any>} ref={this.wrapRef}>
-              <div style={{
-                width:'100%',
-                height:'20px',
-                backgroundColor:'black',
-                cursor:'pointer'}} ref={this.handleRef}></div>
-              <div style={{
-                width:'100%',wordBreak:'break-word'}} ref={this.contentRef}>
+        <div className={this.props.isSelected ? 'frame wrap active' : 'frame wrap'} 
+          style={{
+              left:this.props.position.x,
+              top:this.props.position.y
+           }} 
+          ref={this.wrapRef}>
+              <div className='frame handle' ref={this.handleRef}></div>
+              <div className='frame text' ref={this.contentRef}>
                   {this.renderText()}
               </div>
       </div>
@@ -301,12 +268,8 @@ class Line extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
   }
   render(){
     return(
-      <line x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} style={{
-        stroke:'red',
-        strokeWidth:4,
-        cursor:'pointer',
-        zIndex:1
-      }} ref={this.ref}>
+      <line x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} ref={this.ref}
+      className='line'>
       </line>
     );
   }
@@ -323,7 +286,7 @@ class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
   }
   render(){
     return(
-      <svg style={{position:'absolute',overflow:'visible',zIndex:this.props.zIndex}}>
+      <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
         <Line x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} 
           deleteCallback={this.props.deleteCallback} id1={this.props.id1} id2={this.props.id2}/>
       </svg>
@@ -351,7 +314,6 @@ class Clickbox extends React.Component</*{zIndex:number,
     onMouseDown:(e:MouseEvent)=>{
       if (e.button !== 0) return
       if(this.props.editId!==null){
-        console.log('deedit');
         this.props.frameSetEdit(null);
       } else {
         this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
@@ -402,6 +364,11 @@ function posOp(a:Position,operation:string,b:Position){
   }
   return(newPos);
 }
+function posShift(obj:FrameElement,shift:Position){
+  return({...obj,
+    position: posOp(obj.position,'+',shift)
+  });
+}
 class Tracker extends React.Component<any>{
   constructor(props:any){
     super(props);
@@ -440,37 +407,25 @@ class SelectionBox extends React.Component<any>{
         <line
           x1={startPosition.x} y1={startPosition.y}
           x2={endPosition.x} y2={startPosition.y}
-          style={{          
-            stroke:'red',
-            strokeWidth:1,
-          }}/>
+          id='svg-selectionBox'/>
           <line
           x1={endPosition.x} y1={startPosition.y}
           x2={endPosition.x} y2={endPosition.y}
-          style={{          
-            stroke:'red',
-            strokeWidth:1
-          }}/>
+          id='svg-selectionBox'/>
           <line
           x1={endPosition.x} y1={endPosition.y}
           x2={startPosition.x} y2={endPosition.y}
-          style={{          
-            stroke:'red',
-            strokeWidth:1
-          }}/>
+          id='svg-selectionBox'/>
           <line
           x1={startPosition.x} y1={endPosition.y}
           x2={startPosition.x} y2={startPosition.y}
-          style={{          
-            stroke:'red',
-            strokeWidth:1
-          }}/>
+          id='svg-selectionBox'/>
       </svg>
     );
   }
   render() {
     return(
-      <svg style={{position:'absolute',overflow:'visible',zIndex:this.props.zIndex}}>
+      <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
             {this.props!.effectsDataSelectionBox!.isActive && 
               this.createSelectionRectangle(this.props!.effectsDataSelectionBox.startPos as Position,
                                        this.props!.effectsDataSelectionBox.endPos as Position
@@ -482,12 +437,13 @@ class SelectionBox extends React.Component<any>{
 }
 const SelectionBox_w = connect(mapEffectsSelectionBox, mapEffectsDispatch)(SelectionBox);
 
-class App extends React.Component<any>{
+class App extends React.Component<any,{frameBuffer:any[]}>{
   frameW = 150;
   frameH = 40;
 
   constructor(props:any){
     super(props);
+    this.state = {frameBuffer:[] as FrameElement[]}
   }
 
   selectElementsInArea=(startPos:Position,endPos:Position)=>{
@@ -540,14 +496,60 @@ class App extends React.Component<any>{
     });
     return(links);
   }
-  
    globalHandlers={
+    onCombinationPressed:(evt: KeyboardEvent)=>{
+      evt = evt||window.event // IE support
+      var c = evt.keyCode
+      var ctrlDown = evt.ctrlKey||evt.metaKey // Mac support
+  
+      // Check for Alt+Gr (http://en.wikipedia.org/wiki/AltGr_key)
+      if (ctrlDown && evt.altKey) {console.log('altgr')}
+  
+      // Check for ctrl+c, v and x
+      else if (ctrlDown && c==67) {
+        if(this.props.ids.length>0){
+          var frameArr:any[] = [];
+          var oldFrameIds:number[] = [];
+          this.props.ids.forEach((id:number)=>{
+            frameArr.push(posShift(this.props.framesData[id],{x:20,y:20}));
+          });
+          this.setState({frameBuffer:frameArr});
+        }
+      } // c
+      else if (ctrlDown && c==86) {
+          this.state.frameBuffer.forEach((frameObject:any)=>{
+            this.props.frameAdded(frameObject.label,frameObject.position,frameObject.size);
+          });
+      } // v
+      else if (ctrlDown && c==88) {
+        if(this.props.ids.length>0){
+          var frameArr:any[] = [];
+          var oldFrameIds:number[] = [];
+          this.props.ids.forEach((id:number)=>{
+            frameArr.push(this.props.framesData[id]);
+            oldFrameIds.push(id);
+          });
+          this.setState({frameBuffer:frameArr});
+          this.props.elementsDeselected(this.props.ids);
+            this.props.framesRemoved(oldFrameIds);
+        }
+      } // x
+    },
     onKeyDown:(e:KeyboardEvent)=>{
       if(e.key == 'Delete'){
         var idsToDelete = [] as number[];
         this.props.ids!.forEach((selectedId:number)=>idsToDelete.push(selectedId));
         this.props.framesRemoved(idsToDelete);
       }
+      if(e.key == 'Escape'){
+        if(this.props.ids.length!==0){
+          this.props.elementsDeselected([]);
+        }
+        if(this.props.editId!==null){
+          this.props.frameSetEdit(null);
+        }
+      }
+      this.globalHandlers.onCombinationPressed(e);
     }
    }
   componentDidMount(){
@@ -557,7 +559,6 @@ class App extends React.Component<any>{
     document.addEventListener('keydown',this.globalHandlers.onKeyDown);
   }
   createLinkCallback=(fromId:number)=>{
-    console.log(this.props.effectsDataPseudolink.id);
     this.props.linkAdded(fromId,this.props.effectsDataPseudolink.id);
   }
   selectionCallback=(ids:number[])=>{
@@ -569,7 +570,6 @@ class App extends React.Component<any>{
   dragCallback=(fromId:number,eventX:number,eventY:number)=>{
     if(this.props.ids.includes(fromId)){
       this.props.ids.forEach((selectedId:number)=>{//bad naming
-        console.log('id',selectedId,this.props.framesData[selectedId]);
         this.props.dragEffectAdded(selectedId,
                   {x:eventX-this.props.framesData[selectedId].position.x,y:eventY-this.props.framesData[selectedId].position.y}, 
                   {x:eventX,y:eventY});
@@ -614,18 +614,18 @@ class App extends React.Component<any>{
     return(
       <div>
         <Tracker_w frameMoved={this.props.frameMoved}/>
-
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
                                areaDeselectionCallback={this.props.elementsDeselected}/>
-        <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{this.props.frameAdded('yoyo',{x:130,y:130})}}>Add</Button>
+        <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{this.props.frameAdded('Write something here!',{x:500,y:500})}}>Add</Button>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}
-        <SelectionBox_w zIndex={1}/>
+        <SelectionBox_w zIndex={999}/>
       </div>
     );
   };
 }
 const App_w1 = connect(mapElementsState, mapElementsDispatch)(App);
-const App_w = connect(mapEffectsPseudolink, mapEffectsDispatch)(App_w1);
+const App_w2 = connect(mapEffectsPseudolink, mapEffectsDispatch)(App_w1);
+const App_w = connect(mapElementEditState, mapElementEditDispatch)(App_w2);
 
 export default App_w;

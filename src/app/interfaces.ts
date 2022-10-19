@@ -12,13 +12,14 @@ interface LinkType{
   frame1:number,
   frame2:number
 }
+interface FrameElement {
+    label:string,
+    position:Position,
+    size:Position
+}
 interface FrameType {
   data:{
-    [id:number]: {
-      label:string,
-      position:Position,
-      size:Position
-    }
+    [id:number]: FrameElement
   },
   keys:number[]
 }
@@ -61,4 +62,4 @@ interface Action{
   type:string,
   payload:Payload
 }
-export type {Payload,State,Action,LinkType,Position,Position4,FrameType,OverlayEffectPayload,EffectType,OverlayEffectTypes}
+export type {Payload,State,Action,LinkType,Position,Position4,FrameType,FrameElement,OverlayEffectPayload,EffectType,OverlayEffectTypes}
