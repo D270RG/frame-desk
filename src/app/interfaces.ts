@@ -41,7 +41,7 @@ interface EffectType {
 interface State{
     frames?:FrameType,
     links?:LinkType[],
-    ids?:number[],
+    selectedIds?:number[],
     editId?:number|null
   }
 interface Payload{

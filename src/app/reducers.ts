@@ -21,7 +21,8 @@ const graphInitialState:State = {
     { frame1: 0, frame2: 1},
     { frame1: 1, frame2: 2},
   ],
-  editId:null
+  selectedIds: [] as number[],
+  editId:null,
 }
 const frameEditInitialState:any = {
   editId:null,
@@ -29,9 +30,9 @@ const frameEditInitialState:any = {
     isActive:false,
   }
 }
-const selectionInitialState:State = {
-  ids: [] as number[]
-}
+// const selectionInitialState:State = {
+//   ids: [] as number[]
+// }
 const overlayEffectsInitialState:any ={
   effects:{
       data:{
@@ -79,7 +80,6 @@ const overlayEffectsSlice = createSlice({
     effectSetId:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data[action.payload.type as string].id = action.payload.id;
     },
-    //specific actions
     dragEffectAdded:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data['dragEffect'].data[action.payload.id as number] = {
         startPos:action.payload.startPos,
@@ -97,18 +97,6 @@ const overlayEffectsSlice = createSlice({
       state.effects!.data['dragEffect'].keys.length = 0;
       state.effects!.data['dragEffect'].data = {};
     }
-    // effectUnsetIds:(state,action:PayloadAction<Payload>)=>{
-    //   if(action.payload.selectedIds!.length===0){
-    //     console.log('deselect all');
-    //     state.ids!.length=0;
-    //   } else {
-    //     console.log('deselect id',action.payload.selectedIds);
-    //     state.ids!.filter((id:number)=>(
-    //       action.payload.selectedIds!.includes(id)
-    //       )
-    //     ); 
-    //   }
-    // }
   }
 });
 function posOp(a:Position,operation:string,b:Position){
@@ -172,9 +160,25 @@ const graphSlice = createSlice({
       state.frames!.data[action.payload.id as number].embedLink = null;
     },
 
+    elementsSelected:(state,action:PayloadAction<Payload>)=>{
+      state.selectedIds =state.selectedIds!.concat(action.payload.ids as number[]);
+    },
+    elementsDeselected:(state,action:PayloadAction<Payload>)=>{
+      if(action.payload.ids!.length===0){
+        state.selectedIds!.length=0;
+      } else {
+        state.selectedIds = state.selectedIds!.filter((id:number)=>(
+          !action.payload.ids!.includes(id)
+          )
+        ); 
+      }
+    },
+    elementsSetSelection:(state,action:PayloadAction<Payload>)=>{
+      state.selectedIds = action.payload.ids!.slice();
+    },
+
     frameSetSize:(state, action:PayloadAction<Payload>)=>{
       if(state.frames!.keys.includes(action.payload!.id as number)){
-        console.log('setsize',action.payload.size);
         state.frames!.data[action.payload.id as number].size = action.payload.size as Position //dirty hack
       }
     },
@@ -198,7 +202,8 @@ const graphSlice = createSlice({
               size: {x:0,y:0}
             }
           state.frames!.keys.push(nextFrameId);
-        }
+        };
+        state.selectedIds!.push(nextFrameId);
     },
     framesRemoved:(state, action:PayloadAction<Payload>)=>{
       state.links = state.links!.filter(link=>
@@ -255,23 +260,11 @@ const frameEditSlice = createSlice({
     }
   }
 })
-const selectionSlice = createSlice({
-  name:'selectionReducers',
-  initialState:selectionInitialState,
-  reducers:{
-    elementsSelected:(state,action:PayloadAction<Payload>)=>{
-      state.ids =state.ids!.concat(action.payload.selectedIds as number[]);
-    },
-    elementsDeselected:(state,action:PayloadAction<Payload>)=>{
-      if(action.payload.selectedIds!.length===0){
-        state.ids!.length=0;
-      } else {
-        state.ids = state.ids!.filter((id:number)=>(
-          !action.payload.selectedIds!.includes(id)
-          )
-        ); 
-      }
-    }
-  }
-});
-export {graphSlice,frameEditSlice,selectionSlice,overlayEffectsSlice};
+// const selectionSlice = createSlice({
+//   name:'selectionReducers',
+//   initialState:selectionInitialState,
+//   reducers:{
+    
+//   }
+// });
+export {graphSlice,frameEditSlice,overlayEffectsSlice};

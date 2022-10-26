@@ -1,5 +1,5 @@
 import {State,LinkType,Position,Position4,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './interfaces'
-import {graphSlice,frameEditSlice,selectionSlice,overlayEffectsSlice} from './reducers';
+import {graphSlice,frameEditSlice,overlayEffectsSlice} from './reducers';
 import type {RootState} from './store'
 function mapElementEditState(state:any){
     return {
@@ -16,8 +16,8 @@ function mapElementEditState(state:any){
         framesKeys: state.graphReducer.frames!.keys,
   
         links: state.graphReducer.links,
-  
-        ids: state.selectionReducer.ids,
+
+        selectedIds: state.graphReducer.selectedIds
     }
   }
   const mapElementsDispatch = (dispatch:any)=>({ 
@@ -36,8 +36,9 @@ function mapElementEditState(state:any){
       linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
       linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))},
   
-      elementsSelected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsSelected({selectedIds:selectedIds}))},
-      elementsDeselected:(selectedIds:number[])=>{dispatch(selectionSlice.actions.elementsDeselected({selectedIds:selectedIds}))}
+      elementsSelected:(ids:number[])=>{dispatch(graphSlice.actions.elementsSelected({ids:ids}))},
+      elementsDeselected:(ids:number[])=>{dispatch(graphSlice.actions.elementsDeselected({ids:ids}))},
+      elementsSetSelection:(ids:number[])=>{dispatch(graphSlice.actions.elementsSetSelection({ids:ids}))}
   });
   
   function mapEffectsPseudolink(state:any){

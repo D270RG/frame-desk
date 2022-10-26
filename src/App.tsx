@@ -10,7 +10,7 @@ import {useState,useEffect,useRef} from 'react'
 
 import {State,LinkType,Position,Position4,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
 import {connect} from 'react-redux'
-import {graphSlice,frameEditSlice,selectionSlice,overlayEffectsSlice} from './app/reducers';
+import {graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
 import {mapElementEditState,mapElementEditDispatch,mapElementsState,mapElementsDispatch,
   mapEffectsPseudolink,mapEffectsSelectionBox,mapEffectsDrag,
@@ -126,16 +126,12 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
   this.state = {embedContent:null,embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false}
  }
  resize(extSize:Position|null){
-  console.log(extSize);
   if(extSize === null){
     var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
     this.props.initCallback(this.props.id,size);
   } else {
     this.props.initCallback(this.props.id,extSize);
   }
- }
- getSnapshotBeforeUpdate(prevProps:any, prevState:any) {
-  console.log(this.props.id,prevProps.size,this.props.size);
  }
  shouldComponentUpdate(nextProps:any,nextState:any){
   if(nextProps.editId!=this.props.id && this.props.editId==this.props.id){
@@ -194,15 +190,6 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
     this.props.dragCallback(this.props.id,e.pageX,e.pageY);
-  //   this.props.dragEffectAdded(0,
-  //                 {x:e.pageX-this.props.position.x,y:e.pageY-this.props.position.y}, 
-  //                 {x:e.pageX,y:e.pageY});
-  //   this.props.effectSetActive('dragEffect',true); 
-  // },
-
-  // onMouseUp:(e:MouseEvent)=>{
-  //  this.props.effectSetActive('dragEffect',false);
-  //  this.props.dragEffectsClear();
   }
  }
  contentHandlers = {
@@ -258,7 +245,6 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
       this.props.embedAddedCallback(this.props.id,'image',require('./noimage.png'));
     }
     var onMouseEnterImage = ()=>{
-      console.log(this.props.embedLink.maxSizes.y+2*padding);
       this.setState({deleteTooltipVisible:true})
     }
     var onMouseLeaveImage = ()=>{
@@ -627,6 +613,35 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
     });
     return(links);
   }
+  copySelected(){
+    if(this.props.selectedIds.length>0){
+      var frameArr:any[] = [];
+      var oldFrameIds:number[] = [];
+      this.props.selectedIds.forEach((id:number)=>{
+        frameArr.push(posShift(this.props.framesData[id],{x:20,y:20}));
+      });
+      this.setState({frameBuffer:frameArr});
+    }
+  }
+  pasteSelected(){
+    this.props.elementsDeselected([]);
+    this.state.frameBuffer.forEach((frameObject:any)=>{
+      this.props.frameAdded(frameObject.label,frameObject.embedLink,frameObject.position,frameObject.size);
+    });
+  }
+  cutSelected(){
+    if(this.props.selectedIds.length>0){
+      var frameArr:any[] = [];
+      var oldFrameIds:number[] = [];
+      this.props.selectedIds.forEach((id:number)=>{
+        frameArr.push(this.props.framesData[id]);
+        oldFrameIds.push(id);
+      });
+      this.setState({frameBuffer:frameArr});
+      this.props.elementsDeselected(this.props.selectedIds);
+        this.props.framesRemoved(oldFrameIds);
+    }
+  }
    globalHandlers={
     onCombinationPressed:(evt: KeyboardEvent)=>{
       evt = evt||window.event // IE support
@@ -638,42 +653,23 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
   
       // Check for ctrl+c, v and x
       else if (ctrlDown && c==67) {
-        if(this.props.ids.length>0){
-          var frameArr:any[] = [];
-          var oldFrameIds:number[] = [];
-          this.props.ids.forEach((id:number)=>{
-            frameArr.push(posShift(this.props.framesData[id],{x:20,y:20}));
-          });
-          this.setState({frameBuffer:frameArr});
-        }
+        this.copySelected();
       } // c
       else if (ctrlDown && c==86) {
-          this.state.frameBuffer.forEach((frameObject:any)=>{
-            this.props.frameAdded(frameObject.label,frameObject.embedLink,frameObject.position,frameObject.size);
-          });
+        this.pasteSelected();
       } // v
       else if (ctrlDown && c==88) {
-        if(this.props.ids.length>0){
-          var frameArr:any[] = [];
-          var oldFrameIds:number[] = [];
-          this.props.ids.forEach((id:number)=>{
-            frameArr.push(this.props.framesData[id]);
-            oldFrameIds.push(id);
-          });
-          this.setState({frameBuffer:frameArr});
-          this.props.elementsDeselected(this.props.ids);
-            this.props.framesRemoved(oldFrameIds);
-        }
+        this.cutSelected();
       } // x
     },
     onKeyDown:(e:KeyboardEvent)=>{
       if(e.key == 'Delete'){
         var idsToDelete = [] as number[];
-        this.props.ids!.forEach((selectedId:number)=>idsToDelete.push(selectedId));
+        this.props.selectedIds!.forEach((selectedId:number)=>idsToDelete.push(selectedId));
         this.props.framesRemoved(idsToDelete);
       }
       if(e.key == 'Escape'){
-        if(this.props.ids.length!==0){
+        if(this.props.selectedIds.length!==0){
           this.props.elementsDeselected([]);
         }
         if(this.props.editId!==null){
@@ -699,8 +695,8 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
     this.props.elementsDeselected(ids);
   }
   dragCallback=(fromId:number,eventX:number,eventY:number)=>{
-    if(this.props.ids.includes(fromId)){
-      this.props.ids.forEach((selectedId:number)=>{//bad naming
+    if(this.props.selectedIds.includes(fromId)){
+      this.props.selectedIds.forEach((selectedId:number)=>{//bad naming
         this.props.dragEffectAdded(selectedId,
                   {x:eventX-this.props.framesData[selectedId].position.x,y:eventY-this.props.framesData[selectedId].position.y}, 
                   {x:eventX,y:eventY});
@@ -718,7 +714,7 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
   renderFramesFromProps(zIndex:number):JSX.Element[]{
     var arr = this.props.framesKeys.map((id:number) =>{
       var isSelected = false;
-      if(this.props.ids.includes(id)){
+      if(this.props.selectedIds.includes(id)){
         isSelected = true;
       }
       return(
