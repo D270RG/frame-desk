@@ -1,18 +1,19 @@
 import { createSlice,configureStore  } from "@reduxjs/toolkit"
 import type { PayloadAction} from '@reduxjs/toolkit'
-import type {Action,State,Payload,Position,OverlayEffectPayload,FrameElement} from './interfaces'
+import type {Action,State,Payload,Position,OverlayEffectPayload,FrameElement,EmbedData} from './interfaces'
 
 function nextframeId(framesKeys:any) {
   const maxId = framesKeys.reduce((maxId:any, frameKey:any) => Math.max(frameKey, maxId), -1)
   return maxId + 1
 }
+var defaultSize:Position = {x:600,y:400};
 
 const graphInitialState:State = {
   frames:{
     data:{
-      0:{label: 'Example text', position:{x:100,y:100},size:{x:0,y:0}},
-      1:{label: 'Another example text', position:{x:200,y:500},size:{x:0,y:0}},
-      2:{label: 'Very large multiline example text, hello!', position:{x:500,y:100},size:{x:0,y:0}}
+      0:{label: 'Example text', embedLink:{type:'image',url:'https://i.imgur.com/JeWDIlv.png',maxSizes:defaultSize}, position:{x:100,y:100},size:{x:0,y:0}},
+      1:{label: 'Another example text',embedLink:{type:'image',url:'http://www.google.com/intl/en_ALL/images/logo.gif',maxSizes:defaultSize}, position:{x:200,y:500},size:{x:0,y:0}},
+      2:{label: 'Very large multiline example text, hello!',embedLink:null, position:{x:500,y:100},size:{x:0,y:0}}
     },
     keys:[0,1,2]
   },
@@ -110,13 +111,70 @@ const overlayEffectsSlice = createSlice({
     // }
   }
 });
-
+function posOp(a:Position,operation:string,b:Position){
+  var newPos:Position = {x:0,y:0};
+  switch(operation){
+    case '+':{
+      newPos = {x:a.x+b.x,y:a.y+b.y};
+      break;
+    }
+    case '-':{
+      newPos = {x:a.x-b.x,y:a.y-b.y};
+    }
+  }
+  return(newPos);
+}
 const graphSlice = createSlice({
   name:'frameReducer',
   initialState:graphInitialState,
   reducers:{
+    embedSetMaxSizes:(state,action:PayloadAction<Payload>)=>{
+      state.frames!.data[action.payload.id as number].embedLink!.maxSizes = action.payload!.maxSizes as Position;
+    },
+    embedSetMaxSize:(state,action:PayloadAction<Payload>)=>{
+      switch(action.payload.coordinate){
+        case 'x':{
+          state.frames!.data[action.payload.id as number].embedLink!.maxSizes.x = action.payload.maxSize as number;
+          break;
+        }
+        case 'y':{
+          state.frames!.data[action.payload.id as number].embedLink!.maxSizes.y = action.payload.maxSize as number;
+          break;
+        }
+      }
+    },
+    embedScaleMaxSize:(state,action:PayloadAction<Payload>)=>{
+      switch(action.payload.coordinate){
+        case 'x':{
+          state.frames!.data[action.payload.id as number].embedLink!.maxSizes.x *= action.payload.scale as number;
+          break;
+        }
+        case 'y':{
+          state.frames!.data[action.payload.id as number].embedLink!.maxSizes.y *= action.payload.scale as number;
+          break;
+        }
+        case 'xy':{
+          state.frames!.data[action.payload.id as number].embedLink!.maxSizes.x *= action.payload.scale as number;
+          state.frames!.data[action.payload.id as number].embedLink!.maxSizes.y *= action.payload.scale as number;
+          break;  
+        }
+      }
+    },
+    embedAdded:(state,action:PayloadAction<Payload>)=>{
+      state.frames!.data[action.payload.id as number].embedLink = 
+      {
+       type:action.payload.type as string,
+       url:action.payload.url as string,
+       maxSizes:defaultSize
+      }
+    },
+    embedRemoved:(state,action:PayloadAction<Payload>)=>{
+      state.frames!.data[action.payload.id as number].embedLink = null;
+    },
+
     frameSetSize:(state, action:PayloadAction<Payload>)=>{
       if(state.frames!.keys.includes(action.payload!.id as number)){
+        console.log('setsize',action.payload.size);
         state.frames!.data[action.payload.id as number].size = action.payload.size as Position //dirty hack
       }
     },
@@ -126,6 +184,7 @@ const graphSlice = createSlice({
           state.frames!.data[nextFrameId] = 
             {
               label: action.payload.label as string,
+              embedLink: action.payload.embedLink as EmbedData|null,
               position: action.payload.position as Position,
               size: action.payload.size as Position
             }
@@ -134,6 +193,7 @@ const graphSlice = createSlice({
           state.frames!.data[nextFrameId] = 
             {
               label: action.payload.label as string,
+              embedLink: action.payload.embedLink as EmbedData|null,
               position: action.payload.position as Position,
               size: {x:0,y:0}
             }

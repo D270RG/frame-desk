@@ -12,8 +12,17 @@ interface LinkType{
   frame1:number,
   frame2:number
 }
+interface EmbedData{
+  type:string,
+  url:string,
+  maxSizes:{
+    x:number,
+    y:number
+  }
+}
 interface FrameElement {
     label:string,
+    embedLink:EmbedData|null,
     position:Position,
     size:Position
 }
@@ -41,6 +50,14 @@ interface Payload{
     id1?:number,
     id2?:number,
     label?:string,
+    embedLink?:EmbedData|null,
+    maxSizes?:Position,
+    coordinate?:string,
+    maxSize?:number,
+    sizesDelta?:Position,
+    scale?:number,
+    type?:string,
+    url?:string,
     position?:Position,
     size?:Position,
     link?:LinkType,
@@ -62,4 +79,4 @@ interface Action{
   type:string,
   payload:Payload
 }
-export type {Payload,State,Action,LinkType,Position,Position4,FrameType,FrameElement,OverlayEffectPayload,EffectType,OverlayEffectTypes}
+export type {Payload,State,Action,LinkType,Position,Position4,FrameType,FrameElement,OverlayEffectPayload,EffectType,OverlayEffectTypes,EmbedData}
