@@ -9,7 +9,7 @@ import './index.css';
 
 import store from './app/store'
 import { Provider } from 'react-redux';
-import {mapElementsDispatch} from './app/mappers';
+import {mapFramesDispatch} from './app/mappers';
 import {connect} from 'react-redux';
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
@@ -26,7 +26,7 @@ class Nav extends React.Component<any>{
     );
   }
 }
-const Nav_w = connect(null, mapElementsDispatch)(Nav);
+const Nav_w = connect(null, mapFramesDispatch)(Nav);
 root.render(
   <React.StrictMode>
     <Provider store={store}>

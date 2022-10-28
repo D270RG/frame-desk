@@ -1,3 +1,4 @@
+
 interface Position{
   x:number,
   y:number
@@ -44,7 +45,27 @@ interface State{
     selectedIds?:number[],
     editId?:number|null
   }
+
+  interface MyClass{
+    add:()=>number|string;
+  }
+  interface MyClass2 extends MyClass{
+    add:()=>string;
+  }
+  class MyClassInstance implements MyClass{
+    a:number  = 1;
+    b:number = 2;
+    constructor(x:number,y:number){
+      this.a=x;
+      this.b=y;
+    }
+    add(){
+      return(this.a+this.b);
+    }
+  }
 interface Payload{
+
+
     ids?:number[],
     id?:number|null,
     id1?:number,

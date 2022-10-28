@@ -9,14 +9,24 @@ import ReactDOM from 'react-dom';
 import {useState,useEffect,useRef} from 'react'
 
 import {State,LinkType,Position,Position4,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
-import {connect} from 'react-redux'
+import {connect, MapStateToPropsParam} from 'react-redux'
 import {graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
-import {mapElementEditState,mapElementEditDispatch,mapElementsState,mapElementsDispatch,
-  mapEffectsPseudolink,mapEffectsSelectionBox,mapEffectsDrag,
-  mapEffectsAll,mapEffectsDispatch} from './app/mappers'
+import {mapElementEditState,mapElementEditDispatch,mapElementsState,
+  mapEmbedDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch,
+  mapEffectsAll,mapEffectsDispatch,mapEffectsPseudolink,mapEffectsSelectionBox,mapEffectsDrag} from './app/mappers'
+import { isEmptyBindingElement } from 'typescript';
 
-
+function connector(component:React.ComponentType,stateMappers:MapStateToPropsParam<any,any,any>[],dispatchMappers:((dispatch:any)=>void)[]){
+  var componentBuffer:any = component;
+  stateMappers.forEach(state=>{
+    componentBuffer = connect(state)(componentBuffer);
+  });
+  dispatchMappers.forEach(dispatch=>{
+    componentBuffer = connect(null,dispatch)(componentBuffer);
+  });
+  return(componentBuffer);
+}
 class EditBox extends React.Component<any,{relScale:any}>{
   editBoxRef;
   editClickboxRef;
@@ -42,11 +52,11 @@ class EditBox extends React.Component<any,{relScale:any}>{
         <div style={{height:'50px',width:'100px',backgroundColor:'white'}}>{(Math.round(this.props.embedContent.maxSizes.x*100/this.props.embedFullSize.x))+'%'}</div>
         <Button style={{height:'50px',padding:'15px',margin:'0px'}} 
                 onClick={(e)=>{
-                  this.props.embedScaleCallback(this.props.id,'xy',1.1);        
+                  this.props.embedSetMaxSizes(this.props.id,'xy',1.1);        
                 }}>+</Button>
         <Button style={{height:'50px',padding:'15px',margin:'0px'}} 
                 onClick={(e)=>{
-                  this.props.embedScaleCallback(this.props.id,'xy',0.9);
+                  this.props.embedSetMaxSizes(this.props.id,'xy',0.9);
                 }}>-</Button>
         </div>
           {/* <div className='editBox' style={{position:'absolute',
@@ -62,6 +72,9 @@ class EditBox extends React.Component<any,{relScale:any}>{
     );
   }
 }
+const EditBox_w = connect(null,mapEmbedDispatch)(EditBox);
+
+
 class ControlBox extends React.Component<any>{
   constructor(props:any){
     super(props);
@@ -88,33 +101,9 @@ class ControlBox extends React.Component<any>{
     );
   }
 }
-class Frame extends React.Component</*{id:Readonly<number>,text:string,position:Position,size:Position,frameH:number,frameW:number,radius:number,
-                                    isSelected:boolean, zIndex:number,
-                                      initCallback:any,
-                                      dragCallback:any,
-                                      selectionCallback:any,
-                                      deselectionCallback:any,
-                                      deleteCallback:any,
-                                      createLinkCallback:any,
+const ControlBox_w = connect(null,mapEmbedDispatch)(ControlBox)
 
-                                      effectSetStart:any,
-                                      effectSetEnd:any,
-                                      effectSetActive:any,
-                                      effectSetId:any,
-
-                                      dragEffectAdded:any,
-                                      dragEffectSetStartPos:any,
-                                      dragEffectsClear:any,
-                                      dragEffectSetEndPos:any,
-                                      effects:any,
-
-                                      relabelCallback:any,
-
-                                      editId:any,
-                                      frameSetEdit:any
-                                    },
-                                    {
-                                    }*/any,{embedContent:any,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
+class Frame extends React.Component<any,{embedContent:any,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
  contentRef = React.createRef<any>();
@@ -128,15 +117,15 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
  resize(extSize:Position|null){
   if(extSize === null){
     var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
-    this.props.initCallback(this.props.id,size);
+    this.props.frameSetSize(this.props.id,size);
   } else {
-    this.props.initCallback(this.props.id,extSize);
+    this.props.frameSetSize(this.props.id,extSize);
   }
  }
  shouldComponentUpdate(nextProps:any,nextState:any){
   if(nextProps.editId!=this.props.id && this.props.editId==this.props.id){
     if(this.relabelRef.current.value.length!=0){
-      this.props.relabelCallback(this.props.id,this.relabelRef.current.value);
+      this.props.frameRelabelled(this.props.id,this.relabelRef.current.value);
     }
     this.resize(null);
   }
@@ -238,11 +227,11 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
       }
     }
     var deleteEmbed = ()=>{
-      this.props.embedRemovedCallback(this.props.id);
+      this.props.embedRemoved(this.props.id);
       this.setState({embedContent:null,embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false});
     }
     var onError = ()=>{
-      this.props.embedAddedCallback(this.props.id,'image',require('./noimage.png'));
+      this.props.embedAdded(this.props.id,'image',require('./noimage.png'));
     }
     var onMouseEnterImage = ()=>{
       this.setState({deleteTooltipVisible:true})
@@ -285,14 +274,14 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
                     </div>
           if(this.props.editId===this.props.id){
             return(
-              <EditBox id={this.props.id} 
+              <EditBox_w id={this.props.id} 
                        embedContent={this.props.embedLink} 
-                       embedFullSize={{x:this.state.embedFullWidth,y:this.state.embedFullHeight}} embedScaleCallback={this.props.embedScaleMaxSize} 
+                       embedFullSize={{x:this.state.embedFullWidth,y:this.state.embedFullHeight}} 
                        childRef={this.embedRef} 
                        ratio={this.state.embedRatio} 
                        type='image' 
                        child={img}>
-              </EditBox>);
+              </EditBox_w>);
           } else {
             return(img);
           }
@@ -300,7 +289,8 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
       }
     } else {
       return(
-        <ControlBox id={this.props.id} embedAddedCallback={this.props.embedAdded} embedPopupCallback={this.props.embedPopupCallback}></ControlBox>
+        <ControlBox_w id={this.props.id} 
+                    embedPopupCallback={this.props.embedPopupCallback}/>
       );
     }
  }
@@ -338,10 +328,10 @@ class Frame extends React.Component</*{id:Readonly<number>,text:string,position:
     );
  }
 }
-const Frame_w1 = connect(mapEffectsPseudolink, mapEffectsDispatch)(Frame);
-const Frame_w2 = connect(mapEffectsSelectionBox, mapEffectsDispatch)(Frame_w1);
-const Frame_w3 = connect(null,mapElementsDispatch)(Frame_w2);
-const Frame_w = connect(mapElementEditState, mapElementEditDispatch)(Frame_w3);
+const Frame_w = connector(Frame,[mapEffectsPseudolink,mapEffectsSelectionBox,mapElementEditState],
+                [mapEffectsDispatch,mapElementEditDispatch,mapEmbedDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch]);
+
+
 
 class EmbedPopup extends React.Component<any,{value:any}>{
   constructor(props:any){
@@ -352,7 +342,7 @@ class EmbedPopup extends React.Component<any,{value:any}>{
     this.setState({value: event.target.value});
   }
   handleFormSubmit=(event:any)=>{
-    this.props.embedAddedCallback(this.props.id,'image',this.state.value);
+    this.props.embedAdded(this.props.id,'image',this.state.value);
     this.props.embedPopupCallback(false,this.props.id)
     event.preventDefault();
   }
@@ -372,11 +362,13 @@ class EmbedPopup extends React.Component<any,{value:any}>{
     );
   }
 }
-class Line extends React.Component<{x1:number,y1:number,x2:number,y2:number,deleteCallback:any,id1:number,id2:number},{}>{
+const EmbedPopup_w = connect(null,mapEmbedDispatch)(EmbedPopup);
+
+class Line extends React.Component<any,{}>{
   ref = React.createRef<any>();
 
   onDoubleClick=(e:MouseEvent)=>{
-    this.props.deleteCallback(this.props.id1,this.props.id2);
+    this.props.linkRemoved(this.props.id1,this.props.id2);
   }
   componentDidMount(){
     (this.ref.current as HTMLElement)!.addEventListener('dblclick',this.onDoubleClick);
@@ -392,8 +384,9 @@ class Line extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
     );
   }
 }
+const Line_w = connect(null,mapLinksDispatch)(Line);
 
-class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,deleteCallback:any,id1:number,id2:number,zIndex:number},{offset:Position4}>{
+class Link extends React.Component<any,{offset:Position4}>{
   ref = React.createRef<HTMLInputElement>();
   constructor(props:any){
     super(props);
@@ -405,12 +398,13 @@ class Link extends React.Component<{x1:number,y1:number,x2:number,y2:number,dele
   render(){
     return(
       <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
-        <Line x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} 
-          deleteCallback={this.props.deleteCallback} id1={this.props.id1} id2={this.props.id2}/>
+        <Line_w x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} 
+        id1={this.props.id1} id2={this.props.id2}/>
       </svg>
     );
   }
 }
+const Link_w = connect(null,mapFramesDispatch)(Link);
 
 class Clickbox extends React.Component</*{zIndex:number,
                                         disableAllEffects:any,
@@ -466,8 +460,8 @@ class Clickbox extends React.Component</*{zIndex:number,
     );
   }
 }
-const Clickbox_w1 = connect(mapEffectsSelectionBox, mapEffectsDispatch)(Clickbox);
-const Clickbox_w = connect(mapElementEditState, mapElementEditDispatch)(Clickbox_w1);
+const Clickbox_w = connector(Clickbox,[mapEffectsSelectionBox,mapElementEditState],
+                  [mapEffectsDispatch,mapElementEditDispatch]);
 
 function posOp(a:Position,operation:string,b:Position){
   var newPos:Position = {x:0,y:0};
@@ -600,7 +594,7 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
         this.props.framesData[link.frame2].size.y,
       );
       return(
-      <Link 
+      <Link_w 
           id1={link.frame1}
           id2={link.frame2}
           x1={positions.x1}
@@ -608,7 +602,6 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
           x2={positions.x2}
           y2={positions.y2}
           zIndex={zIndex}
-          deleteCallback={this.props.linkRemoved}
       />);
     });
     return(links);
@@ -688,12 +681,6 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
   createLinkCallback=(fromId:number)=>{
     this.props.linkAdded(fromId,this.props.effectsDataPseudolink.id);
   }
-  selectionCallback=(ids:number[])=>{
-    this.props.elementsSelected(ids);
-  }
-  deselectionCallback=(ids:number[])=>{
-    this.props.elementsDeselected(ids);
-  }
   dragCallback=(fromId:number,eventX:number,eventY:number)=>{
     if(this.props.selectedIds.includes(fromId)){
       this.props.selectedIds.forEach((selectedId:number)=>{//bad naming
@@ -727,18 +714,9 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
                        frameW={this.frameW} 
                        radius={24} 
                isSelected={isSelected}
-               initCallback={this.props.frameSetSize} 
                dragCallback={this.dragCallback}
-               deleteCallback={this.props.frameRemoved}
-               selectionCallback={this.selectionCallback}
-               deselectionCallback={this.deselectionCallback}
                createLinkCallback={this.createLinkCallback}
-
-               relabelCallback={this.props.frameRelabelled}
                embedPopupCallback={this.popupCallback}
-               embedAddedCallback={this.props.embedAdded}
-               embedScaleCallback={this.props.embedSetMaxSizes}
-               embedRemovedCallback={this.props.embedRemoved}
                />
       );
     });
@@ -747,7 +725,8 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
   render(){
     return(
       <div style={{position:'absolute',overflow:'hidden'}} className='app'>
-        {this.state.popupView && <EmbedPopup id={this.state.popupId} embedPopupCallback={this.popupCallback} embedAddedCallback={this.props.embedAdded}></EmbedPopup>}
+        {this.state.popupView && <EmbedPopup_w id={this.state.popupId} 
+                                               embedPopupCallback={this.popupCallback}/>}
         <Tracker_w frameMoved={this.props.frameMoved}/>
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
                                areaDeselectionCallback={this.props.elementsDeselected}/>
@@ -758,8 +737,7 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
     );
   };
 }
-const App_w1 = connect(mapElementsState, mapElementsDispatch)(App);
-const App_w2 = connect(mapEffectsPseudolink, mapEffectsDispatch)(App_w1);
-const App_w = connect(mapElementEditState, mapElementEditDispatch)(App_w2);
+const App_w = connector(App,[mapElementsState,mapEffectsPseudolink,mapElementEditState],
+  [mapEmbedDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch,mapEffectsDispatch]);
 
 export default App_w;

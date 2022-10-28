@@ -237,7 +237,6 @@ const graphSlice = createSlice({
       }
     },
     linkRemoved:(state,action:PayloadAction<Payload>)=>{
-      console.log(state.links!.length);
       state.links = state.links!.filter(link=>{
           return(!(((link.frame1==action.payload.id1) && (link.frame2==action.payload.id2)) || ((link.frame1==action.payload.id2) && (link.frame2==action.payload.id1))));
         } 

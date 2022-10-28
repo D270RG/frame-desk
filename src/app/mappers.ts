@@ -20,26 +20,29 @@ function mapElementEditState(state:any){
         selectedIds: state.graphReducer.selectedIds
     }
   }
-  const mapElementsDispatch = (dispatch:any)=>({ 
+  const mapEmbedDispatch = (dispatch:any)=>({ 
       embedSetMaxSizes:(id:number,maxSizes:Position)=>{dispatch(graphSlice.actions.embedSetMaxSizes({id:id,maxSizes:maxSizes}))},
       embedSetMaxSize:(id:number,coordinate:string,maxSize:number)=>{dispatch(graphSlice.actions.embedSetMaxSize({id:id,coordinate:coordinate,maxSize:maxSize}))},
       embedScaleMaxSize:(id:number,coordinate:string,scale:number)=>{dispatch(graphSlice.actions.embedScaleMaxSize({id:id,coordinate:coordinate,scale:scale}))},
       embedAdded:(id:number,type:string,url:string)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url}))},
       embedRemoved:(id:number)=>{dispatch(graphSlice.actions.embedRemoved({id:id}))},
-
-      frameSetSize:(id:number,size:Position)=>{dispatch(graphSlice.actions.frameSetSize({id:id,size:size}))},
-      frameAdded:(label:string,embedLink:EmbedData|null,position:Position,size?:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,embedLink:embedLink,position:position,size:size}))},
-      framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
-      frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
-      frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
-  
-      linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
-      linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))},
-  
-      elementsSelected:(ids:number[])=>{dispatch(graphSlice.actions.elementsSelected({ids:ids}))},
-      elementsDeselected:(ids:number[])=>{dispatch(graphSlice.actions.elementsDeselected({ids:ids}))},
-      elementsSetSelection:(ids:number[])=>{dispatch(graphSlice.actions.elementsSetSelection({ids:ids}))}
   });
+  const mapFramesDispatch = (dispatch:any)=>({ 
+    frameSetSize:(id:number,size:Position)=>{dispatch(graphSlice.actions.frameSetSize({id:id,size:size}))},
+    frameAdded:(label:string,embedLink:EmbedData|null,position:Position,size?:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,embedLink:embedLink,position:position,size:size}))},
+    framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
+    frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
+    frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
+});
+const mapLinksDispatch = (dispatch:any)=>({ 
+  linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
+  linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))},
+});
+const mapSelectionDispatch = (dispatch:any)=>({ 
+  elementsSelected:(ids:number[])=>{dispatch(graphSlice.actions.elementsSelected({ids:ids}))},
+  elementsDeselected:(ids:number[])=>{dispatch(graphSlice.actions.elementsDeselected({ids:ids}))},
+  elementsSetSelection:(ids:number[])=>{dispatch(graphSlice.actions.elementsSetSelection({ids:ids}))}
+});
   
   function mapEffectsPseudolink(state:any){
     return{
@@ -73,6 +76,9 @@ function mapElementEditState(state:any){
       dragEffectSetStartPos:(id:number,startPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetStartPos({id:id,endPos:startPos}))},
       dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))}
   });
-export {mapElementEditState,mapElementEditDispatch,mapElementsState,mapElementsDispatch,
+export {mapElementEditState,mapElementsState,
+
+        mapElementEditDispatch,mapEmbedDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch,
+        
         mapEffectsPseudolink,mapEffectsSelectionBox,mapEffectsDrag,
         mapEffectsAll,mapEffectsDispatch} 
