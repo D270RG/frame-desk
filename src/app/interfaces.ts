@@ -3,12 +3,7 @@ interface Position{
   x:number,
   y:number
 }
-interface Position4{
-  x1:number,
-  y1:number,
-  x2:number,
-  y2:number
-}
+
 interface LinkType{
   frame1:number,
   frame2:number
@@ -39,33 +34,45 @@ interface EffectType {
   },
   keys:string[]
 }
-interface State{
+interface graphStateType{
     frames?:FrameType,
     links?:LinkType[],
     selectedIds?:number[],
     editId?:number|null
+}
+interface frameEditType{
+  editId:number|null,
+  dragEffect:{
+    isActive:boolean
   }
-
-  interface MyClass{
-    add:()=>number|string;
-  }
-  interface MyClass2 extends MyClass{
-    add:()=>string;
-  }
-  class MyClassInstance implements MyClass{
-    a:number  = 1;
-    b:number = 2;
-    constructor(x:number,y:number){
-      this.a=x;
-      this.b=y;
+}
+interface overlayEffectsType{
+  effects:{
+    data:{
+      pseudolinkEffect:{
+        id:number,
+        isActive:boolean,
+        startPos:Position,
+        endPos:Position
+      },
+      selectionBoxEffect:{
+        isActive:boolean,
+        startPos:Position,
+        endPos:Position
+      }
+      dragEffect:{
+        data:{
+          [number:number]:{
+            startPos:Position,
+            endPos:Position
+          }
+        },
+        keys:number[]
+      }
     }
-    add(){
-      return(this.a+this.b);
-    }
   }
+}
 interface Payload{
-
-
     ids?:number[],
     id?:number|null,
     id1?:number,
@@ -100,4 +107,4 @@ interface Action{
   type:string,
   payload:Payload
 }
-export type {Payload,State,Action,LinkType,Position,Position4,FrameType,FrameElement,OverlayEffectPayload,EffectType,OverlayEffectTypes,EmbedData}
+export type {frameEditType,overlayEffectsType,Payload,graphStateType,Action,LinkType,Position,FrameType,FrameElement,OverlayEffectPayload,EffectType,OverlayEffectTypes,EmbedData}

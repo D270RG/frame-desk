@@ -1,6 +1,6 @@
 import { createSlice,configureStore  } from "@reduxjs/toolkit"
 import type { PayloadAction} from '@reduxjs/toolkit'
-import type {Action,State,Payload,Position,OverlayEffectPayload,FrameElement,EmbedData} from './interfaces'
+import type {LinkType,frameEditType,overlayEffectsType,Action,graphStateType,Payload,Position,OverlayEffectPayload,FrameElement,EmbedData} from './interfaces'
 
 function nextframeId(framesKeys:any) {
   const maxId = framesKeys.reduce((maxId:any, frameKey:any) => Math.max(frameKey, maxId), -1)
@@ -8,7 +8,7 @@ function nextframeId(framesKeys:any) {
 }
 var defaultSize:Position = {x:600,y:400};
 
-const graphInitialState:State = {
+const graphInitialState = {
   frames:{
     data:{
       0:{label: 'Example text', embedLink:{type:'image',url:'https://i.imgur.com/JeWDIlv.png',maxSizes:defaultSize}, position:{x:100,y:100},size:{x:0,y:0}},
@@ -24,16 +24,13 @@ const graphInitialState:State = {
   selectedIds: [] as number[],
   editId:null,
 }
-const frameEditInitialState:any = {
-  editId:null,
+const frameEditInitialState = {
+  editId:-1,
   dragEffect:{
     isActive:false,
   }
 }
-// const selectionInitialState:State = {
-//   ids: [] as number[]
-// }
-const overlayEffectsInitialState:any ={
+const overlayEffectsInitialState = {
   effects:{
       data:{
         pseudolinkEffect:{
@@ -61,7 +58,7 @@ const overlayEffectsInitialState:any ={
 }
 const overlayEffectsSlice = createSlice({
   name:'overlayEffects',
-  initialState:overlayEffectsInitialState,
+  initialState:overlayEffectsInitialState as any,
   reducers:{
     disableAllEffects:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       Object.keys(state.effects.data).forEach((effectKey:string)=>{
@@ -99,22 +96,9 @@ const overlayEffectsSlice = createSlice({
     }
   }
 });
-function posOp(a:Position,operation:string,b:Position){
-  var newPos:Position = {x:0,y:0};
-  switch(operation){
-    case '+':{
-      newPos = {x:a.x+b.x,y:a.y+b.y};
-      break;
-    }
-    case '-':{
-      newPos = {x:a.x-b.x,y:a.y-b.y};
-    }
-  }
-  return(newPos);
-}
 const graphSlice = createSlice({
   name:'frameReducer',
-  initialState:graphInitialState,
+  initialState:graphInitialState as any,
   reducers:{
     embedSetMaxSizes:(state,action:PayloadAction<Payload>)=>{
       state.frames!.data[action.payload.id as number].embedLink!.maxSizes = action.payload!.maxSizes as Position;
@@ -206,10 +190,10 @@ const graphSlice = createSlice({
         state.selectedIds!.push(nextFrameId);
     },
     framesRemoved:(state, action:PayloadAction<Payload>)=>{
-      state.links = state.links!.filter(link=>
+      state.links = state.links!.filter((link:LinkType)=>
         !(action.payload.ids!.includes(link.frame1) || action.payload.ids!.includes(link.frame2))
       ); 
-      state.frames!.keys = state.frames!.keys.filter((key) => !action.payload.ids!.includes(key));
+      state.frames!.keys = state.frames!.keys.filter((key:number) => !action.payload.ids!.includes(key));
       action.payload.ids!.forEach((id)=>{
         delete state.frames!.data[id];
       });
@@ -230,21 +214,21 @@ const graphSlice = createSlice({
         action.payload.link!.frame2 = action.payload.link!.frame1;
         action.payload.link!.frame1 = buffer;
       } //swap values, frame1<frame2
-      var duplicates = state.links!.filter(link=>((link.frame1==action.payload.link!.frame1)&&(link.frame2==action.payload.link!.frame2)) 
+      var duplicates = state.links!.filter((link:LinkType)=>((link.frame1==action.payload.link!.frame1)&&(link.frame2==action.payload.link!.frame2)) 
                                                 || ((link.frame1==action.payload.link!.frame2)&&(link.frame2==action.payload.link!.frame1)));
       if((duplicates.length==0)&&(action.payload.link!.frame1!==action.payload.link!.frame2)){
           state.links!.push(action.payload.link as any);
       }
     },
     linkRemoved:(state,action:PayloadAction<Payload>)=>{
-      state.links = state.links!.filter(link=>{
+      state.links = state.links!.filter((link:LinkType)=>{
           return(!(((link.frame1==action.payload.id1) && (link.frame2==action.payload.id2)) || ((link.frame1==action.payload.id2) && (link.frame2==action.payload.id1))));
         } 
       );
       console.log(state.links!.length);
     },
     linkRemovedAll:(state,action:PayloadAction<Payload>)=>{
-      state.links = state.links!.filter(link=>
+      state.links = state.links!.filter((link:LinkType)=>
         ((link.frame1!== action.payload.id) && (link.frame2!==action.payload.id))
       ); 
     }
@@ -255,7 +239,7 @@ const frameEditSlice = createSlice({
   initialState:frameEditInitialState,
   reducers:{
     frameSetEdit:(state, action:PayloadAction<Payload>)=>{
-      state.editId = action.payload!.id
+      state.editId = action.payload!.id as number;
     }
   }
 })

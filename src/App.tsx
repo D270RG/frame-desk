@@ -8,8 +8,8 @@ import '../node_modules/bootstrap/scss/bootstrap.scss'
 import ReactDOM from 'react-dom';
 import {useState,useEffect,useRef} from 'react'
 
-import {State,LinkType,Position,Position4,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
-import {connect, MapStateToPropsParam} from 'react-redux'
+import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
+import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
 import {graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
 import {mapElementEditState,mapElementEditDispatch,mapElementsState,
@@ -27,7 +27,17 @@ function connector(component:React.ComponentType,stateMappers:MapStateToPropsPar
   });
   return(componentBuffer);
 }
-class EditBox extends React.Component<any,{relScale:any}>{
+
+interface EditBoxProps extends ReturnType<typeof mapEmbedDispatch>{
+  id:number,
+  ratio:number,
+  type:string,
+  childRef:React.RefObject<any>
+  embedContent:EmbedData,
+  embedFullSize:Position,
+  child:JSX.Element[] | JSX.Element,
+}
+class EditBox extends React.Component<EditBoxProps,{relScale:any}>{
   editBoxRef;
   editClickboxRef;
   resizeRef;
@@ -52,21 +62,13 @@ class EditBox extends React.Component<any,{relScale:any}>{
         <div style={{height:'50px',width:'100px',backgroundColor:'white'}}>{(Math.round(this.props.embedContent.maxSizes.x*100/this.props.embedFullSize.x))+'%'}</div>
         <Button style={{height:'50px',padding:'15px',margin:'0px'}} 
                 onClick={(e)=>{
-                  this.props.embedSetMaxSizes(this.props.id,'xy',1.1);        
+                  this.props.embedScaleMaxSize(this.props.id,'xy',1.1);        
                 }}>+</Button>
         <Button style={{height:'50px',padding:'15px',margin:'0px'}} 
                 onClick={(e)=>{
-                  this.props.embedSetMaxSizes(this.props.id,'xy',0.9);
+                  this.props.embedScaleMaxSize(this.props.id,'xy',0.9);
                 }}>-</Button>
         </div>
-          {/* <div className='editBox' style={{position:'absolute',
-                      width:imageBoundingBox.right-imageBoundingBox.left,height: editMarkerSize+'px',
-                      left:framePadding,
-                      top:'calc(100% - '+framePadding+'px - '+this.props.childRef.current.clientHeight+'px',
-                      textAlign:'left'
-                      }}>
-
-            </div> */}
             {this.props.child}
         </div>
     );
@@ -74,8 +76,12 @@ class EditBox extends React.Component<any,{relScale:any}>{
 }
 const EditBox_w = connect(null,mapEmbedDispatch)(EditBox);
 
-
-class ControlBox extends React.Component<any>{
+interface ControlBoxProps extends ReturnType<typeof mapEmbedDispatch>{
+  id:number,
+  child:JSX.Element,
+  embedPopupCallback: (arg0: boolean, arg1: any) => void,
+}
+class ControlBox extends React.Component<ControlBoxProps,{}>{
   constructor(props:any){
     super(props);
   }
@@ -88,14 +94,6 @@ class ControlBox extends React.Component<any>{
                   this.props.embedPopupCallback(true,this.props.id);
                 }}>Add image</Button>
         </div>
-          {/* <div className='editBox' style={{position:'absolute',
-                      width:imageBoundingBox.right-imageBoundingBox.left,height: editMarkerSize+'px',
-                      left:framePadding,
-                      top:'calc(100% - '+framePadding+'px - '+this.props.childRef.current.clientHeight+'px',
-                      textAlign:'left'
-                      }}>
-
-            </div> */}
             {this.props.child}
         </div>
     );
@@ -103,7 +101,31 @@ class ControlBox extends React.Component<any>{
 }
 const ControlBox_w = connect(null,mapEmbedDispatch)(ControlBox)
 
-class Frame extends React.Component<any,{embedContent:any,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
+interface FrameProps extends ReturnType<typeof mapEffectsPseudolink>,
+                             ReturnType<typeof mapEffectsSelectionBox>,
+                             ReturnType<typeof mapElementEditState>,
+                             ReturnType<typeof mapEffectsDispatch>,
+                             ReturnType<typeof mapElementEditDispatch>,
+                             ReturnType<typeof mapEmbedDispatch>,
+                             ReturnType<typeof mapFramesDispatch>,
+                             ReturnType<typeof mapLinksDispatch>,
+                             ReturnType<typeof mapSelectionDispatch>
+{                   
+  id:number,
+  text:string,
+  embedLink:EmbedData,
+  position:Position,
+  size:Position,
+  zIndex:number,
+  frameH:number,
+  frameW:number,
+  radius:number,
+  isSelected:boolean,
+  dragCallback:(fromId: number, eventX: number, eventY: number) => void,
+  createLinkCallback:(fromId: number) => void,
+  embedPopupCallback:(isVisible: boolean, id: number) => void
+}
+class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
  contentRef = React.createRef<any>();
@@ -276,12 +298,11 @@ class Frame extends React.Component<any,{embedContent:any,embedFullWidth:number|
             return(
               <EditBox_w id={this.props.id} 
                        embedContent={this.props.embedLink} 
-                       embedFullSize={{x:this.state.embedFullWidth,y:this.state.embedFullHeight}} 
+                       embedFullSize={{x:this.state.embedFullWidth as number,y:this.state.embedFullHeight as number}} 
                        childRef={this.embedRef} 
                        ratio={this.state.embedRatio} 
                        type='image' 
-                       child={img}>
-              </EditBox_w>);
+                       child={img}/>);
           } else {
             return(img);
           }
@@ -290,7 +311,8 @@ class Frame extends React.Component<any,{embedContent:any,embedFullWidth:number|
     } else {
       return(
         <ControlBox_w id={this.props.id} 
-                    embedPopupCallback={this.props.embedPopupCallback}/>
+                    embedPopupCallback={this.props.embedPopupCallback}
+                    child={<div></div>}/>
       );
     }
  }
@@ -328,12 +350,24 @@ class Frame extends React.Component<any,{embedContent:any,embedFullWidth:number|
     );
  }
 }
-const Frame_w = connector(Frame,[mapEffectsPseudolink,mapEffectsSelectionBox,mapElementEditState],
-                [mapEffectsDispatch,mapElementEditDispatch,mapEmbedDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch]);
+const Frame_w = connector(Frame,
+                [mapEffectsPseudolink,
+                mapEffectsSelectionBox,
+                mapElementEditState],
+
+                [mapEffectsDispatch,
+                mapElementEditDispatch,
+                mapEmbedDispatch,
+                mapFramesDispatch,
+                mapLinksDispatch,
+                mapSelectionDispatch]);
 
 
-
-class EmbedPopup extends React.Component<any,{value:any}>{
+interface EmbedPopupProps extends ReturnType<typeof mapEmbedDispatch>{
+  id:number,
+  embedPopupCallback: (arg0: boolean, arg1: any) => void
+}
+class EmbedPopup extends React.Component<EmbedPopupProps,{value:string}>{
   constructor(props:any){
     super(props);
     this.state = {value:''}
@@ -364,7 +398,16 @@ class EmbedPopup extends React.Component<any,{value:any}>{
 }
 const EmbedPopup_w = connect(null,mapEmbedDispatch)(EmbedPopup);
 
-class Line extends React.Component<any,{}>{
+
+interface LineProps extends ReturnType<typeof mapLinksDispatch>{
+  x1:number,
+  y1:number,
+  x2:number,
+  y2:number,
+  id1:number,
+  id2:number
+}
+class Line extends React.Component<LineProps,{}>{
   ref = React.createRef<any>();
 
   onDoubleClick=(e:MouseEvent)=>{
@@ -386,14 +429,19 @@ class Line extends React.Component<any,{}>{
 }
 const Line_w = connect(null,mapLinksDispatch)(Line);
 
-class Link extends React.Component<any,{offset:Position4}>{
+interface LinkProps extends ReturnType<typeof mapFramesDispatch>{
+  zIndex:number,
+  x1:number,
+  y1:number,
+  x2:number,
+  y2:number,
+  id1:number,
+  id2:number
+}
+class Link extends React.Component<LinkProps,{}>{
   ref = React.createRef<HTMLInputElement>();
   constructor(props:any){
     super(props);
-  }
-  componentDidUpdate(prevProps:any){
-    if(prevProps!==this.props){
-    }
   }
   render(){
     return(
@@ -406,17 +454,16 @@ class Link extends React.Component<any,{offset:Position4}>{
 }
 const Link_w = connect(null,mapFramesDispatch)(Link);
 
-class Clickbox extends React.Component</*{zIndex:number,
-                                        disableAllEffects:any,
-                                        effectSetStart:any,
-                                        effectSetEnd:any,
-                                        effectSetActive:any,
-                                        effectSetId:any,
-                                        dragEffectsClear:any,
-                                        effectsDataSelectionBox:any,
-                                      
-                                        areaSelectionCallback:any,
-                                        areaDeselectionCallback:any}*/any>{
+interface ClickboxProps extends ReturnType<typeof mapEffectsSelectionBox>,
+                                ReturnType<typeof mapElementEditState>,
+                                ReturnType<typeof mapEffectsDispatch>,
+                                ReturnType<typeof mapElementEditDispatch>{
+
+  areaSelectionCallback: (arg0: any, arg1: any) => void,
+  zIndex:number,
+
+}
+class Clickbox extends React.Component<ClickboxProps,{}>{
   selectionBoxRef = React.createRef<HTMLDivElement>();
   clickboxRef = React.createRef<HTMLDivElement>();
   constructor(props:any){
@@ -481,7 +528,13 @@ function posShift(obj:FrameElement,shift:Position){
     position: posOp(obj.position,'+',shift)
   });
 }
-class Tracker extends React.Component<any>{
+
+interface TrackerProps extends ReturnType<typeof mapEffectsAll>,
+                               ReturnType<typeof mapEffectsDispatch>,
+                               ReturnType<typeof mapFramesDispatch>{
+
+}
+class Tracker extends React.Component<TrackerProps,{}>{
   constructor(props:any){
     super(props);
   }
@@ -510,9 +563,13 @@ class Tracker extends React.Component<any>{
     return(false);
   }
 }
-const Tracker_w = connect(mapEffectsAll, mapEffectsDispatch)(Tracker);
+const Tracker_w = connector(Tracker,[mapEffectsAll], [mapEffectsDispatch,mapFramesDispatch]);
 
-class SelectionBox extends React.Component<any>{
+interface SelectionBoxProps extends ReturnType<typeof mapEffectsSelectionBox>,
+                                    ReturnType<typeof mapEffectsDispatch>{
+  zIndex:number
+}
+class SelectionBox extends React.Component<SelectionBoxProps,{}>{
   createSelectionRectangle(startPosition:Position,endPosition:Position){
     return(
       <svg style={{position:'absolute',overflow:'visible'}}>
@@ -549,7 +606,19 @@ class SelectionBox extends React.Component<any>{
 }
 const SelectionBox_w = connect(mapEffectsSelectionBox, mapEffectsDispatch)(SelectionBox);
 
-class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popupId:number}>{
+interface AppProps extends ReturnType<typeof mapElementsState>,
+                           ReturnType<typeof mapEffectsPseudolink>,
+                           ReturnType<typeof mapElementEditState>,
+                           
+                           ReturnType<typeof mapEmbedDispatch>,
+                           ReturnType<typeof mapFramesDispatch>,
+                           ReturnType<typeof mapLinksDispatch>,
+                           ReturnType<typeof mapSelectionDispatch>,
+                           ReturnType<typeof mapEffectsDispatch>,
+                           ReturnType<typeof mapElementEditDispatch>{
+
+}
+class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,popupId:number}>{
   frameW = 150;
   frameH = 40;
 
@@ -738,6 +807,6 @@ class App extends React.Component<any,{frameBuffer:any[],popupView:boolean,popup
   };
 }
 const App_w = connector(App,[mapElementsState,mapEffectsPseudolink,mapElementEditState],
-  [mapEmbedDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch,mapEffectsDispatch]);
+  [mapEmbedDispatch,mapElementEditDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch,mapEffectsDispatch]);
 
 export default App_w;
