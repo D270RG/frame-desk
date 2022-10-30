@@ -2,6 +2,7 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import ReactDOM from 'react-dom';
 import {Navbar,Form,NavDropdown,Button} from 'react-bootstrap';
+import {ConnectedProps} from 'react-redux'
 import '../node_modules/bootstrap/dist/css/bootstrap.min.css';
 import {ChevronDown} from 'react-bootstrap-icons'
 import App_w from './App';
@@ -9,11 +10,13 @@ import './index.css';
 
 import store from './app/store'
 import { Provider } from 'react-redux';
-import {mapFramesDispatch} from './app/mappers';
+import {framesDispatchConnector,applyConnectors} from './app/mappers';
 import {connect} from 'react-redux';
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
-class Nav extends React.Component<any>{
+
+interface NavProps extends ConnectedProps<typeof framesDispatchConnector>{}
+class Nav extends React.Component<NavProps,{}>{
   constructor(props:any){
     super(props);
   }
@@ -26,7 +29,7 @@ class Nav extends React.Component<any>{
     );
   }
 }
-const Nav_w = connect(null, mapFramesDispatch)(Nav);
+const Nav_w = applyConnectors(Nav,[framesDispatchConnector])
 root.render(
   <React.StrictMode>
     <Provider store={store}>

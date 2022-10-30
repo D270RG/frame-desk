@@ -21,14 +21,10 @@ const graphInitialState = {
     { frame1: 0, frame2: 1},
     { frame1: 1, frame2: 2},
   ],
-  selectedIds: [] as number[],
-  editId:null,
+  selectedIds: [] as number[]
 }
 const frameEditInitialState = {
-  editId:-1,
-  dragEffect:{
-    isActive:false,
-  }
+  editId:null as number|null
 }
 const overlayEffectsInitialState = {
   effects:{
@@ -225,7 +221,6 @@ const graphSlice = createSlice({
           return(!(((link.frame1==action.payload.id1) && (link.frame2==action.payload.id2)) || ((link.frame1==action.payload.id2) && (link.frame2==action.payload.id1))));
         } 
       );
-      console.log(state.links!.length);
     },
     linkRemovedAll:(state,action:PayloadAction<Payload>)=>{
       state.links = state.links!.filter((link:LinkType)=>
@@ -239,7 +234,7 @@ const frameEditSlice = createSlice({
   initialState:frameEditInitialState,
   reducers:{
     frameSetEdit:(state, action:PayloadAction<Payload>)=>{
-      state.editId = action.payload!.id as number;
+      state.editId = action.payload!.id as number|null;
     }
   }
 })

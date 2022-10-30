@@ -1,4 +1,4 @@
-import React, { DetailedHTMLProps, Ref } from 'react';
+import React, { DetailedHTMLProps, ReactComponentElement, Ref } from 'react';
 import logo from './logo.svg';
 import './App.scss';
 import styles from './App.scss';  
@@ -12,23 +12,20 @@ import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,O
 import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
 import {graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
 import type {RootState} from './app/store'
-import {mapElementEditState,mapElementEditDispatch,mapElementsState,
-  mapEmbedDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch,
-  mapEffectsAll,mapEffectsDispatch,mapEffectsPseudolink,mapEffectsSelectionBox,mapEffectsDrag} from './app/mappers'
+import {elementEditStateConnector,elementsStateConnector,
+
+  elementEditDispatchConnector,embedDispatchConnector,framesDispatchConnector,linksDispatchConnector,selectionDispatchConnector,
+  
+  pseudolinkEffectConnector,selectionBoxEffectConnector,dragEffectConnector,
+  allEffectsConnector,effectsDispatchConnector,
+
+  applyConnectors} from './app/mappers'
 import { isEmptyBindingElement } from 'typescript';
+import { link } from 'fs/promises';
 
-function connector(component:React.ComponentType,stateMappers:MapStateToPropsParam<any,any,any>[],dispatchMappers:((dispatch:any)=>void)[]){
-  var componentBuffer:any = component;
-  stateMappers.forEach(state=>{
-    componentBuffer = connect(state)(componentBuffer);
-  });
-  dispatchMappers.forEach(dispatch=>{
-    componentBuffer = connect(null,dispatch)(componentBuffer);
-  });
-  return(componentBuffer);
-}
 
-interface EditBoxProps extends ReturnType<typeof mapEmbedDispatch>{
+
+interface EditBoxProps extends ConnectedProps<typeof embedDispatchConnector>{
   id:number,
   ratio:number,
   type:string,
@@ -74,9 +71,12 @@ class EditBox extends React.Component<EditBoxProps,{relScale:any}>{
     );
   }
 }
-const EditBox_w = connect(null,mapEmbedDispatch)(EditBox);
+const EditBox_w = applyConnectors(EditBox,[embedDispatchConnector]);
 
-interface ControlBoxProps extends ReturnType<typeof mapEmbedDispatch>{
+
+
+
+interface ControlBoxProps extends ConnectedProps<typeof embedDispatchConnector>{
   id:number,
   child:JSX.Element,
   embedPopupCallback: (arg0: boolean, arg1: any) => void,
@@ -99,17 +99,20 @@ class ControlBox extends React.Component<ControlBoxProps,{}>{
     );
   }
 }
-const ControlBox_w = connect(null,mapEmbedDispatch)(ControlBox)
+const ControlBox_w = applyConnectors(ControlBox,[embedDispatchConnector]);
 
-interface FrameProps extends ReturnType<typeof mapEffectsPseudolink>,
-                             ReturnType<typeof mapEffectsSelectionBox>,
-                             ReturnType<typeof mapElementEditState>,
-                             ReturnType<typeof mapEffectsDispatch>,
-                             ReturnType<typeof mapElementEditDispatch>,
-                             ReturnType<typeof mapEmbedDispatch>,
-                             ReturnType<typeof mapFramesDispatch>,
-                             ReturnType<typeof mapLinksDispatch>,
-                             ReturnType<typeof mapSelectionDispatch>
+
+
+interface FrameProps extends ConnectedProps<typeof pseudolinkEffectConnector>,
+                             ConnectedProps<typeof selectionBoxEffectConnector>,
+                             ConnectedProps<typeof elementEditStateConnector>,
+
+                             ConnectedProps<typeof effectsDispatchConnector>,
+                             ConnectedProps<typeof elementEditDispatchConnector>,
+                             ConnectedProps<typeof embedDispatchConnector>,
+                             ConnectedProps<typeof framesDispatchConnector>,
+                             ConnectedProps<typeof linksDispatchConnector>,
+                             ConnectedProps<typeof selectionDispatchConnector>
 {                   
   id:number,
   text:string,
@@ -125,6 +128,7 @@ interface FrameProps extends ReturnType<typeof mapEffectsPseudolink>,
   createLinkCallback:(fromId: number) => void,
   embedPopupCallback:(isVisible: boolean, id: number) => void
 }
+
 class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
@@ -221,7 +225,7 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
  }
  wrapHandlers = {
     onDoubleClick:(e:MouseEvent)=>{
-      if(this.props.editId==null){
+      if(this.props.editId===null){
         this.props.frameSetEdit(this.props.id);              
       }
     }
@@ -350,20 +354,20 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
     );
  }
 }
-const Frame_w = connector(Frame,
-                [mapEffectsPseudolink,
-                mapEffectsSelectionBox,
-                mapElementEditState],
+const Frame_w = applyConnectors(Frame,[pseudolinkEffectConnector,
+                                      selectionBoxEffectConnector,
+                                      elementEditStateConnector,
 
-                [mapEffectsDispatch,
-                mapElementEditDispatch,
-                mapEmbedDispatch,
-                mapFramesDispatch,
-                mapLinksDispatch,
-                mapSelectionDispatch]);
+                                      effectsDispatchConnector,
+                                      elementEditDispatchConnector,
+                                      embedDispatchConnector,
+                                      framesDispatchConnector,
+                                      linksDispatchConnector,
+                                      selectionDispatchConnector]);
 
 
-interface EmbedPopupProps extends ReturnType<typeof mapEmbedDispatch>{
+
+interface EmbedPopupProps extends ConnectedProps<typeof embedDispatchConnector>{
   id:number,
   embedPopupCallback: (arg0: boolean, arg1: any) => void
 }
@@ -396,10 +400,11 @@ class EmbedPopup extends React.Component<EmbedPopupProps,{value:string}>{
     );
   }
 }
-const EmbedPopup_w = connect(null,mapEmbedDispatch)(EmbedPopup);
+const EmbedPopup_w = applyConnectors(Frame,[embedDispatchConnector]);
 
 
-interface LineProps extends ReturnType<typeof mapLinksDispatch>{
+
+interface LineProps extends ConnectedProps<typeof linksDispatchConnector>{
   x1:number,
   y1:number,
   x2:number,
@@ -427,9 +432,10 @@ class Line extends React.Component<LineProps,{}>{
     );
   }
 }
-const Line_w = connect(null,mapLinksDispatch)(Line);
+const Line_w = applyConnectors(Line,[linksDispatchConnector]);
 
-interface LinkProps extends ReturnType<typeof mapFramesDispatch>{
+
+interface LinkProps extends ConnectedProps<typeof framesDispatchConnector>{
   zIndex:number,
   x1:number,
   y1:number,
@@ -452,12 +458,13 @@ class Link extends React.Component<LinkProps,{}>{
     );
   }
 }
-const Link_w = connect(null,mapFramesDispatch)(Link);
+const Link_w = applyConnectors(Link,[framesDispatchConnector]);
 
-interface ClickboxProps extends ReturnType<typeof mapEffectsSelectionBox>,
-                                ReturnType<typeof mapElementEditState>,
-                                ReturnType<typeof mapEffectsDispatch>,
-                                ReturnType<typeof mapElementEditDispatch>{
+
+interface ClickboxProps extends ConnectedProps<typeof selectionBoxEffectConnector>,
+                                ConnectedProps<typeof elementEditStateConnector>,
+                                ConnectedProps<typeof effectsDispatchConnector>,
+                                ConnectedProps<typeof elementEditDispatchConnector>{
 
   areaSelectionCallback: (arg0: any, arg1: any) => void,
   zIndex:number,
@@ -507,8 +514,11 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     );
   }
 }
-const Clickbox_w = connector(Clickbox,[mapEffectsSelectionBox,mapElementEditState],
-                  [mapEffectsDispatch,mapElementEditDispatch]);
+const Clickbox_w = applyConnectors(Clickbox,[selectionBoxEffectConnector,
+                                             elementEditStateConnector,
+                                             effectsDispatchConnector,
+                                             elementEditDispatchConnector]);
+
 
 function posOp(a:Position,operation:string,b:Position){
   var newPos:Position = {x:0,y:0};
@@ -529,9 +539,9 @@ function posShift(obj:FrameElement,shift:Position){
   });
 }
 
-interface TrackerProps extends ReturnType<typeof mapEffectsAll>,
-                               ReturnType<typeof mapEffectsDispatch>,
-                               ReturnType<typeof mapFramesDispatch>{
+interface TrackerProps extends ConnectedProps<typeof allEffectsConnector>,
+                               ConnectedProps<typeof effectsDispatchConnector>,
+                               ConnectedProps<typeof framesDispatchConnector>{
 
 }
 class Tracker extends React.Component<TrackerProps,{}>{
@@ -563,10 +573,14 @@ class Tracker extends React.Component<TrackerProps,{}>{
     return(false);
   }
 }
-const Tracker_w = connector(Tracker,[mapEffectsAll], [mapEffectsDispatch,mapFramesDispatch]);
+const Tracker_w = applyConnectors(Tracker,[allEffectsConnector, 
+                                          effectsDispatchConnector,
+                                          framesDispatchConnector])
 
-interface SelectionBoxProps extends ReturnType<typeof mapEffectsSelectionBox>,
-                                    ReturnType<typeof mapEffectsDispatch>{
+
+
+interface SelectionBoxProps extends ConnectedProps<typeof selectionBoxEffectConnector>,
+                                    ConnectedProps<typeof effectsDispatchConnector>{
   zIndex:number
 }
 class SelectionBox extends React.Component<SelectionBoxProps,{}>{
@@ -604,18 +618,20 @@ class SelectionBox extends React.Component<SelectionBoxProps,{}>{
     );
   }
 }
-const SelectionBox_w = connect(mapEffectsSelectionBox, mapEffectsDispatch)(SelectionBox);
+const SelectionBox_w = applyConnectors(SelectionBox,[selectionBoxEffectConnector,
+                                                     effectsDispatchConnector]);
 
-interface AppProps extends ReturnType<typeof mapElementsState>,
-                           ReturnType<typeof mapEffectsPseudolink>,
-                           ReturnType<typeof mapElementEditState>,
+
+interface AppProps extends ConnectedProps<typeof elementsStateConnector>,
+                           ConnectedProps<typeof pseudolinkEffectConnector>,
+                           ConnectedProps<typeof elementEditStateConnector>,
                            
-                           ReturnType<typeof mapEmbedDispatch>,
-                           ReturnType<typeof mapFramesDispatch>,
-                           ReturnType<typeof mapLinksDispatch>,
-                           ReturnType<typeof mapSelectionDispatch>,
-                           ReturnType<typeof mapEffectsDispatch>,
-                           ReturnType<typeof mapElementEditDispatch>{
+                           ConnectedProps<typeof embedDispatchConnector>,
+                           ConnectedProps<typeof framesDispatchConnector>,
+                           ConnectedProps<typeof linksDispatchConnector>,
+                           ConnectedProps<typeof selectionDispatchConnector>,
+                           ConnectedProps<typeof effectsDispatchConnector>,
+                           ConnectedProps<typeof elementEditDispatchConnector>{
 
 }
 class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,popupId:number}>{
@@ -806,7 +822,14 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     );
   };
 }
-const App_w = connector(App,[mapElementsState,mapEffectsPseudolink,mapElementEditState],
-  [mapEmbedDispatch,mapElementEditDispatch,mapFramesDispatch,mapLinksDispatch,mapSelectionDispatch,mapEffectsDispatch]);
-
+const App_w = applyConnectors(App,[elementsStateConnector,
+                                   pseudolinkEffectConnector,
+                                   elementEditStateConnector,
+                                   embedDispatchConnector,
+                                   framesDispatchConnector,
+                                   linksDispatchConnector,
+                                   selectionDispatchConnector,
+                                   effectsDispatchConnector,
+                                   elementEditDispatchConnector]);
+    
 export default App_w;
