@@ -10,6 +10,13 @@ $frameMinHeight: 40px;
 $framePadding: 8px;
 $editMarkerSize: 50px;
 
+@font-face{
+    font-family:'Joystix';
+    src: url('./joystix_monospace.ttf') format('truetype');
+    font-style: normal;
+    fornt-stretch: normal;
+}
+
 body{
     overflow:hidden;
 }
@@ -68,7 +75,7 @@ body{
 }
 .line,#svg-line{
     stroke: $secondaryColor;
-    stroke-width: 3;
+    stroke-width: 3px;
     cursor: pointer;
     pointer-events: auto;
     z-index:1
@@ -76,7 +83,7 @@ body{
 #svg-selectionBox{
     stroke: $secondaryColor;
     stroke-dasharray: 5;
-    stroke-width:1;
+    stroke-width:1px;
 }
 .editBox{
     background-color:$shadedColor
@@ -110,4 +117,6 @@ body{
 :export {
     framePadding: $framePadding;
     editMarkerSize: $editMarkerSize;
+    frameMinWidth: $frameMinWidth;
+    frameMinHeight: $frameMinHeight;
   }

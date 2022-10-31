@@ -10,7 +10,8 @@ import {useState,useEffect,useRef} from 'react'
 
 import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
 import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
-import {graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
+import {Popup} from './modals'
+import type {popupProps} from './modals'
 import type {RootState} from './app/store'
 import {elementEditStateConnector,elementsStateConnector,
 
@@ -22,7 +23,8 @@ import {elementEditStateConnector,elementsStateConnector,
   applyConnectors} from './app/mappers'
 import { isEmptyBindingElement } from 'typescript';
 import { link } from 'fs/promises';
-
+const _frameMinWidth = parseInt(styles.frameMinWidth, 10);
+const _frameMinHeight = parseInt(styles.frameMinHeight, 10);
 
 
 interface EditBoxProps extends ConnectedProps<typeof embedDispatchConnector>{
@@ -126,7 +128,7 @@ interface FrameProps extends ConnectedProps<typeof pseudolinkEffectConnector>,
   isSelected:boolean,
   dragCallback:(fromId: number, eventX: number, eventY: number) => void,
   createLinkCallback:(fromId: number) => void,
-  embedPopupCallback:(isVisible: boolean, id: number) => void
+  popupCallback:(isVisible: boolean, id: number) => void
 }
 
 class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
@@ -158,21 +160,13 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
   if(nextProps.editId==this.props.id && this.props.editId!=this.props.id){
     this.resize(null);
   }
-  if(nextProps!=undefined){
-    if(nextProps.size.y!=(this.wrapRef.current as any)!.clientHeight){
-      this.resize(null);
-    }
+  if(nextProps.embedLink===null && this.props.embedLink!==null){
+    this.resize({x:this.props.frameW,y:9999});
   }
-  if(nextProps.embedLink==null && this.props.embedLink!=null){
-    this.resize(null);
+  if(nextProps.embedLink!==null && this.props.embedLink===null){
+    this.resize({x:nextProps.embedLink.maxSizes.x,y:9999});
   }
   return(true);
-  }
-  componentDidUpdate(){
-    if(this.props.embedLink) {
-      this.textRef.current.style.maxWidth = (this.props.embedLink.maxSizes.x+'px');
-      
-    };
   }
  componentDidMount(){
     //handle box binding
@@ -231,7 +225,6 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
     }
  }
  renderText(){
- 
   if(this.props.editId===this.props.id){
     return(<textarea style={{boxSizing:'border-box',width:'100%'}} rows={5} ref={this.relabelRef} defaultValue={this.props.text}/>)
   } else {
@@ -315,7 +308,7 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
     } else {
       return(
         <ControlBox_w id={this.props.id} 
-                    embedPopupCallback={this.props.embedPopupCallback}
+                    embedPopupCallback={this.props.popupCallback}
                     child={<div></div>}/>
       );
     }
@@ -336,11 +329,8 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
           ref={this.wrapRef}>
               <div className='frame handle' ref={this.handleRef}></div>
               <div ref={this.contentRef} style={{alignItems:'center',justifyContent:'center',textAlign:'center'}}>
-                <div ref={this.textRef} className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
-                  {
-                    
-                    this.renderText()
-}
+                <div ref={this.textRef} style={{maxWidth:this.props.size.x,maxHeight:this.props.size.y}} className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
+                  {this.renderText()}
                 </div>
                 <div className='frame embed'>
                   {this.loadEmbed()}
@@ -367,40 +357,7 @@ const Frame_w = applyConnectors(Frame,[pseudolinkEffectConnector,
 
 
 
-interface EmbedPopupProps extends ConnectedProps<typeof embedDispatchConnector>{
-  id:number,
-  embedPopupCallback: (arg0: boolean, arg1: any) => void
-}
-class EmbedPopup extends React.Component<EmbedPopupProps,{value:string}>{
-  constructor(props:any){
-    super(props);
-    this.state = {value:''}
-  }
-  handleFormChange=(event:any)=>{
-    this.setState({value: event.target.value});
-  }
-  handleFormSubmit=(event:any)=>{
-    this.props.embedAdded(this.props.id,'image',this.state.value);
-    this.props.embedPopupCallback(false,this.props.id)
-    event.preventDefault();
-  }
-  render(){
 
-    return(
-    <div>
-      <div className='clickbox' style={{zIndex:999}} onClick={()=>{this.props.embedPopupCallback(false,this.props.id)}}/>
-        <div className='embedPopup' style={{zIndex:1000}}>
-            <form onSubmit={this.handleFormSubmit}>
-              <label htmlFor='url'>Input image url</label>
-              <input type = 'text' name="url" onChange={this.handleFormChange}></input>
-              <input type='submit' value='Submit'></input>
-            </form>
-        </div>
-    </div>
-    );
-  }
-}
-const EmbedPopup_w = applyConnectors(Frame,[embedDispatchConnector]);
 
 
 
@@ -783,7 +740,12 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   popupCallback=(isVisible:boolean,id:number)=>{
     this.setState({popupView:isVisible,popupId:id});
   }
+  popupExternalAction=(isVisible:boolean,value:string)=>{
+    this.setState({popupView:isVisible});
+    this.props.embedAdded(this.state.popupId,'image',value);
+  }
   renderFramesFromProps(zIndex:number):JSX.Element[]{
+    console.log();
     var arr = this.props.framesKeys.map((id:number) =>{
       var isSelected = false;
       if(this.props.selectedIds.includes(id)){
@@ -795,13 +757,13 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
                        position={this.props.framesData[id].position} 
                        size={this.props.framesData[id].size} 
                        zIndex={zIndex}
-                       frameH={this.frameH} 
-                       frameW={this.frameW} 
+                       frameH={_frameMinHeight} 
+                       frameW={_frameMinWidth} 
                        radius={24} 
                isSelected={isSelected}
                dragCallback={this.dragCallback}
                createLinkCallback={this.createLinkCallback}
-               embedPopupCallback={this.popupCallback}
+               popupCallback={this.popupCallback}
                />
       );
     });
@@ -810,8 +772,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   render(){
     return(
       <div style={{position:'absolute',overflow:'hidden'}} className='app'>
-        {this.state.popupView && <EmbedPopup_w id={this.state.popupId} 
-                                               embedPopupCallback={this.popupCallback}/>}
+        {this.state.popupView && <Popup label='Enter image URL' id={this.state.popupId} 
+                                               externalStateAction={this.popupExternalAction}/>}
         <Tracker_w frameMoved={this.props.frameMoved}/>
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
                                areaDeselectionCallback={this.props.elementsDeselected}/>
