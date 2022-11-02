@@ -35,7 +35,7 @@ const mapEmbedDispatch = (dispatch:RootDispatch)=>({
     embedSetMaxSizes:(id:number,maxSizes:Position)=>{dispatch(graphSlice.actions.embedSetMaxSizes({id:id,maxSizes:maxSizes}))},
     embedSetMaxSize:(id:number,coordinate:string,maxSize:number)=>{dispatch(graphSlice.actions.embedSetMaxSize({id:id,coordinate:coordinate,maxSize:maxSize}))},
     embedScaleMaxSize:(id:number,coordinate:string,scale:number)=>{dispatch(graphSlice.actions.embedScaleMaxSize({id:id,coordinate:coordinate,scale:scale}))},
-    embedAdded:(id:number,type:string,url:string)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url}))},
+    embedAdded:(id:number,type:string,url:string,maxSizes:Position)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url,maxSizes:maxSizes}))},
     embedRemoved:(id:number)=>{dispatch(graphSlice.actions.embedRemoved({id:id}))},
 });
 const embedDispatchConnector = connect(null,mapEmbedDispatch);

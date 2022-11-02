@@ -6,13 +6,13 @@ function nextframeId(framesKeys:any) {
   const maxId = framesKeys.reduce((maxId:any, frameKey:any) => Math.max(frameKey, maxId), -1)
   return maxId + 1
 }
-var defaultSize:Position = {x:600,y:400};
+var defaultSize:Position = {x:0,y:0};
 
 const graphInitialState = {
   frames:{
     data:{
-      0:{label: 'Example text', embedLink:{type:'image',url:'https://i.imgur.com/JeWDIlv.png',maxSizes:defaultSize}, position:{x:100,y:100},size:{x:0,y:0}},
-      1:{label: 'Another example text',embedLink:{type:'image',url:'http://www.google.com/intl/en_ALL/images/logo.gif',maxSizes:defaultSize}, position:{x:200,y:500},size:{x:0,y:0}},
+      0:{label: 'Example text', embedLink:{type:'image',url:'https://i.imgur.com/JeWDIlv.png',maxSizes:null}, position:{x:100,y:100},size:{x:0,y:0}},
+      1:{label: 'Another example text',embedLink:{type:'image',url:'http://www.google.com/intl/en_ALL/images/logo.gif',maxSizes:null}, position:{x:200,y:500},size:{x:0,y:0}},
       2:{label: 'Very large multiline example text, hello!',embedLink:null, position:{x:500,y:100},size:{x:0,y:0}}
     },
     keys:[0,1,2]
@@ -129,11 +129,12 @@ const graphSlice = createSlice({
       }
     },
     embedAdded:(state,action:PayloadAction<Payload>)=>{
+      console.log(action.payload.id,'embed added',action.payload.maxSizes);
       state.frames!.data[action.payload.id as number].embedLink = 
       {
        type:action.payload.type as string,
        url:action.payload.url as string,
-       maxSizes:defaultSize
+       maxSizes:action.payload.maxSizes as Position
       }
     },
     embedRemoved:(state,action:PayloadAction<Payload>)=>{

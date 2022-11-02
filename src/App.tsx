@@ -25,6 +25,11 @@ import { isEmptyBindingElement } from 'typescript';
 import { link } from 'fs/promises';
 const _frameMinWidth = parseInt(styles.frameMinWidth, 10);
 const _frameMinHeight = parseInt(styles.frameMinHeight, 10);
+const _framePadding = parseInt(styles.framePadding,10);
+const _handleHeight = parseInt(styles.handleHeight,10);
+const _embedAddedButtonHeight = parseInt(styles.embedAddedButtonHeight,10);
+const _additionalFrameHeight = 2*_framePadding+_handleHeight+_embedAddedButtonHeight;
+const _additionalFrameHeightWithEmbed = 2*_framePadding+_handleHeight;
 
 
 interface EditBoxProps extends ConnectedProps<typeof embedDispatchConnector>{
@@ -91,7 +96,7 @@ class ControlBox extends React.Component<ControlBoxProps,{}>{
     return(
       <div>
         <div style={{display:'flex',flexDirection:'row',height:'50px',width:'100%'}}>
-        <Button style={{height:'50px',padding:'15px',margin:'0px'}} 
+        <Button style={{padding:'15px',margin:'0px'}} 
                 onClick={(e)=>{
                   this.props.embedPopupCallback(true,this.props.id);
                 }}>Add image</Button>
@@ -131,7 +136,7 @@ interface FrameProps extends ConnectedProps<typeof pseudolinkEffectConnector>,
   popupCallback:(isVisible: boolean, id: number) => void
 }
 
-class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
+class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
  contentRef = React.createRef<any>();
@@ -140,7 +145,7 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
  textRef = React.createRef<any>();
  constructor(props:any){
   super(props);
-  this.state = {embedContent:null,embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false}
+  this.state = {maxTextWidth:this.props.frameW,embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false}
  }
  resize(extSize:Position|null){
   if(extSize === null){
@@ -150,25 +155,60 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
     this.props.frameSetSize(this.props.id,extSize);
   }
  }
- shouldComponentUpdate(nextProps:any,nextState:any){
+  resizeX(extSize:Position|null){
+    if(extSize === null){
+      var size = {x:(this.wrapRef.current as any)!.clientWidth,y:this.props.size.y};
+      this.props.frameSetSize(this.props.id,size);
+    } else {
+      this.props.frameSetSize(this.props.id,{x:extSize.x,y:this.props.size.y});
+    }
+ }
+ resizeY(extSize:Position|null){
+  if(extSize === null){
+    var size = {x:this.props.size.x,y:(this.wrapRef.current as any)!.clientHeight};
+    this.props.frameSetSize(this.props.id,size);
+  } else {
+    this.props.frameSetSize(this.props.id,{x:this.props.size.x,y:extSize.y});
+  }
+ }
+ componentDidUpdate(prevProps:any){
+  var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
+  if(this.props.size.y!=size.y || this.props.size.x!=size.x){
+    //sync redux stored sizes with actual DOM sizes
+    this.resize(null);
+  }
+  if(this.props.embedLink===null){
+    //determine text max width: by embed element or default width;
+    if(/*prevent rerender*/this.state.maxTextWidth!=this.props.frameW) this.setState({maxTextWidth:this.props.frameW});
+  } else {/*if embed added to element*/
+    if(/*if embed is loaded*/this.props.embedLink.maxSizes!==null && /*prevent rerender*/this.state.maxTextWidth!=this.props.embedLink.maxSizes.x) this.setState({maxTextWidth:this.props.embedLink.maxSizes.x});
+  }
+ }
+ shouldComponentUpdate(nextProps:any){
   if(nextProps.editId!=this.props.id && this.props.editId==this.props.id){
     if(this.relabelRef.current.value.length!=0){
       this.props.frameRelabelled(this.props.id,this.relabelRef.current.value);
     }
-    this.resize(null);
   }
-  if(nextProps.editId==this.props.id && this.props.editId!=this.props.id){
-    this.resize(null);
-  }
-  if(nextProps.embedLink===null && this.props.embedLink!==null){
-    this.resize({x:this.props.frameW,y:9999});
-  }
-  if(nextProps.embedLink!==null && this.props.embedLink===null){
-    this.resize({x:nextProps.embedLink.maxSizes.x,y:9999});
-  }
+  //-----legacy code-------
+  // if(nextProps.editId==this.props.id && this.props.editId!=this.props.id){
+  //   this.resize(null);
+  // }
+  // if(this.props.embedLink!==null && this.props.embedLink.maxSizes===null && nextProps.embedLink.maxSizes!==null){
+  //   //if image is about to update
+  //   this.resize({x:nextProps.embedLink.maxSizes.x,y:nextProps.embedLink.maxSizes.y}); //resize by image
+  //   console.log('next embed added rerender');
+  // }
+  //-----legacy code-------
   return(true);
   }
  componentDidMount(){
+    if(this.props.embedLink===null){
+      //links added and loaded
+      this.setState({maxTextWidth:this.props.frameW});
+    } else {
+      if(this.props.embedLink.maxSizes!==null) this.setState({maxTextWidth:this.props.embedLink.maxSizes.x});
+    }
     //handle box binding
     // (this.handleRef.current)!.addEventListener('mouseup', this.handleHandlers.onMouseUp);
     (this.handleRef.current)!.addEventListener('mousedown', this.handleHandlers.onMouseDown);
@@ -232,25 +272,26 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
   }
  }
  loadEmbed(){
-    var load = ()=>{
-      var img = new Image();
-      img.src = this.props.embedLink!.url;
-      var ratio = img.width/img.height;
-      img.onload = ()=>{
-        this.setState({embedRatio:ratio,embedFullWidth:img.width,embedFullHeight:img.height,embedContent:this.props.embedLink});
-        if(ratio>=1){ //horizontal orientation
-          this.props.embedSetMaxSizes(this.props.id,{x:400,y:400/ratio});
-        } else { //vertical orientation
-          this.props.embedSetMaxSizes(this.props.id,{x:600*ratio,y:600});
-        }
-      }
-    }
+    // var load = ()=>{
+    //   var img = new Image();
+    //   img.src = this.props.embedLink!.url;
+    //   var ratio = img.width/img.height;
+    //   img.onload = ()=>{
+    //     this.setState({embedRatio:ratio,embedFullWidth:img.width,embedFullHeight:img.height,embedContent:this.props.embedLink});
+    //     if(ratio>=1){ //horizontal orientation
+    //       this.props.embedSetMaxSizes(this.props.id,{x:400,y:400/ratio});
+    //     } else { //vertical orientation
+    //       this.props.embedSetMaxSizes(this.props.id,{x:600*ratio,y:600});
+    //     }
+    //   }
+    // }
     var deleteEmbed = ()=>{
       this.props.embedRemoved(this.props.id);
-      this.setState({embedContent:null,embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false});
+      this.setState({embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false});
     }
     var onError = ()=>{
-      this.props.embedAdded(this.props.id,'image',require('./noimage.png'));
+      console.log(this.props.embedLink.url,'error');
+      this.props.embedAdded(this.props.id,'image',require('./noimage.png'),{x:400,y:400});
     }
     var onMouseEnterImage = ()=>{
       this.setState({deleteTooltipVisible:true})
@@ -258,16 +299,16 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
     var onMouseLeaveImage = ()=>{
       this.setState({deleteTooltipVisible:false})
     }
-    if(this.props.embedLink!=null){
+    if(this.props.embedLink!==null && this.props.embedLink.maxSizes!==null){
       switch(this.props.embedLink.type as string){
         case 'image':{
-          if(this.state.embedContent!=null){
-            if(this.props.embedLink.url != this.state.embedContent.url){
-              load();
-            }
-          } else {
-            load();
-          }
+          // if(this.state.embedContent!=null){
+          //   if(this.props.embedLink.url != this.state.embedContent.url){
+          //     load();
+          //   }
+          // } else {
+          //   load();
+          // }
           var padding = parseFloat(styles.framePadding);
           var img = <div onMouseEnter={onMouseEnterImage}
                          onMouseLeave={onMouseLeaveImage}>
@@ -329,7 +370,7 @@ class Frame extends React.Component<FrameProps,{embedContent:any,embedFullWidth:
           ref={this.wrapRef}>
               <div className='frame handle' ref={this.handleRef}></div>
               <div ref={this.contentRef} style={{alignItems:'center',justifyContent:'center',textAlign:'center'}}>
-                <div ref={this.textRef} style={{maxWidth:this.props.size.x,maxHeight:this.props.size.y}} className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
+                <div ref={this.textRef} style={{maxWidth:this.state.maxTextWidth}} className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
                   {this.renderText()}
                 </div>
                 <div className='frame embed'>
@@ -716,6 +757,13 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
    }
   componentDidMount(){
     document.addEventListener('keydown',this.globalHandlers.onKeyDown);
+    //embed content initial load
+    this.props.framesKeys.forEach((id:number)=>{
+      const frameData = this.props.framesData[id];
+      if(frameData.embedLink!=null){
+        this.loadEmbed(id,frameData.embedLink.url);
+      }
+    });
   }
   componentWillUnmount(){
     document.addEventListener('keydown',this.globalHandlers.onKeyDown);
@@ -723,6 +771,23 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   createLinkCallback=(fromId:number)=>{
     this.props.linkAdded(fromId,this.props.effectsDataPseudolink.id);
   }
+  //embed
+  loadEmbed=(id:number,url:string)=>{
+    var img = new Image();
+    img.src = url;
+    img.onload = ()=>{
+      console.log(id,'load');
+      var ratio = img.width/img.height;
+      if(ratio>=1){ //horizontal orientation
+        const size = {x:400,y:400/ratio};
+        this.props.embedAdded(id,'image',url,size);
+      } else { //vertical orientation
+        const size = {x:400,y:400/ratio};
+        this.props.embedAdded(id,'image',url,size);
+      }
+    }
+  }
+  ///embed
   dragCallback=(fromId:number,eventX:number,eventY:number)=>{
     if(this.props.selectedIds.includes(fromId)){
       this.props.selectedIds.forEach((selectedId:number)=>{//bad naming
@@ -742,10 +807,9 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   popupExternalAction=(isVisible:boolean,value:string)=>{
     this.setState({popupView:isVisible});
-    this.props.embedAdded(this.state.popupId,'image',value);
+    this.loadEmbed(this.state.popupId,value);
   }
   renderFramesFromProps(zIndex:number):JSX.Element[]{
-    console.log();
     var arr = this.props.framesKeys.map((id:number) =>{
       var isSelected = false;
       if(this.props.selectedIds.includes(id)){
@@ -772,8 +836,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   render(){
     return(
       <div style={{position:'absolute',overflow:'hidden'}} className='app'>
-        {this.state.popupView && <Popup label='Enter image URL' id={this.state.popupId} 
-                                               externalStateAction={this.popupExternalAction}/>}
+        {this.state.popupView && <Popup label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
         <Tracker_w frameMoved={this.props.frameMoved}/>
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
                                areaDeselectionCallback={this.props.elementsDeselected}/>

@@ -4,7 +4,6 @@ import React from 'react';
 //     externalStateAction: (arg0: boolean, arg1: any) => void
 //   }
 interface popupProps {
-        id:number,
         label:string,
         externalStateAction: (activeValue: boolean, value:string) => void
       }

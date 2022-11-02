@@ -6,6 +6,8 @@ $textColor:rgb(166, 187, 224);
 $shadedColor:rgba(0, 0, 0, 0.366);
 $frameMinWidth: 150px;
 $frameMinHeight: 40px;
+$handleHeight: 25px;
+$embedAddedButtonHeight: 25px;
 
 $framePadding: 8px;
 $editMarkerSize: 50px;
@@ -50,7 +52,7 @@ body{
     }
     &.handle{
         width:100%;
-        height:25px;
+        height:$handleHeight;
         border-radius: 10px;
         background-color:$secondaryColor;
         cursor:pointer;
@@ -114,9 +116,15 @@ body{
     border-color:$secondaryColor;
     color:$textColor;
 }
+.embedAddedButton{
+    height:$embedAddedButtonHeight;
+}
 :export {
     framePadding: $framePadding;
     editMarkerSize: $editMarkerSize;
     frameMinWidth: $frameMinWidth;
     frameMinHeight: $frameMinHeight;
+
+    handleHeight: $handleHeight;
+    embedAddedButtonHeight: $embedAddedButtonHeight;
   }
