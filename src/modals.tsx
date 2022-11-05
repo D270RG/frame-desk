@@ -1,8 +1,4 @@
 import React from 'react';
-// interface popupProps extends ConnectedProps<typeof embedDispatchConnector>{
-//     id:number,
-//     externalStateAction: (arg0: boolean, arg1: any) => void
-//   }
 interface popupProps {
         label:string,
         externalStateAction: (activeValue: boolean, value:string) => void
@@ -21,15 +17,15 @@ interface popupProps {
     }
     render(){
       return(
-      <div>
-        <div className='clickbox' style={{zIndex:999}} onClick={()=>{this.props.externalStateAction(false,this.state.value)}}/>
-          <div className='embedPopup' style={{zIndex:1000}}>
-              <form onSubmit={this.handleFormSubmit}>
-                <label htmlFor='url'>{this.props.label}</label>
-                <input type = 'text' name="url" onChange={this.handleFormChange}></input>
-                <input type='submit' value='Submit'></input>
-              </form>
-          </div>
+      <div className='popupModal'>
+        <div className='modalClickbox' onClick={()=>{this.props.externalStateAction(false,this.state.value)}}/>
+        <div className='modalWindow'>
+          <form className='modalForm' onSubmit={this.handleFormSubmit}>
+            <label className='modalLabel' htmlFor='url'>{this.props.label}</label>
+            <input className='modalInput' autoComplete='off' type = 'text' name="url" onChange={this.handleFormChange}></input>
+            <input className='modalSubmit' type='submit' value='Submit'></input>
+          </form>
+        </div>
       </div>
       );
     }

@@ -163,6 +163,23 @@ const graphSlice = createSlice({
         state.frames!.data[action.payload.id as number].size = action.payload.size as Position //dirty hack
       }
     },
+    framesZoom:(state, action:PayloadAction<Payload>)=>{
+      state.frames!.keys.forEach((id:number)=>{
+        console.log(id,action.payload.multiplier);
+        var oldSize = {
+          ...state.frames!.data[id as number].size,
+          x: state.frames!.data[id as number].size.x,
+          y: state.frames!.data[id as number].size.y,
+        }
+        var newSize = {
+          ...state.frames!.data[id as number].size,
+          x: state.frames!.data[id as number].size.x*(action.payload.multiplier as number),
+          y: state.frames!.data[id as number].size.y*(action.payload.multiplier as number),
+        }
+        console.log(oldSize,newSize);
+        state.frames!.data[id as number].size = newSize;
+      });
+    },
     frameAdded:(state, action:PayloadAction<Payload>)=>{
       var nextFrameId:number = nextframeId(state.frames!.keys as number[]);
         if(action.payload.size != undefined){

@@ -47,6 +47,8 @@ const mapFramesDispatch = (dispatch:RootDispatch)=>({
   framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
   frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
   frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
+  framesZoom:(multiplier:number)=>{dispatch(graphSlice.actions.framesZoom({multiplier:multiplier}))}
+
 });
 const framesDispatchConnector = connect(null,mapFramesDispatch);
 

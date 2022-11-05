@@ -12,31 +12,46 @@ import store from './app/store'
 import { Provider } from 'react-redux';
 import {framesDispatchConnector,applyConnectors} from './app/mappers';
 import {connect} from 'react-redux';
+import {Popup} from './modals';
+import type {popupProps} from './modals'
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
 
-interface NavProps extends ConnectedProps<typeof framesDispatchConnector>{}
-class Nav extends React.Component<NavProps,{}>{
-  constructor(props:any){
+interface InterfaceProps extends ConnectedProps<typeof framesDispatchConnector>{}
+class Interface extends React.Component<InterfaceProps,{popupView:boolean}>{
+  constructor(props:InterfaceProps){
     super(props);
+    this.state = {popupView:false}
   }
-  render(): React.ReactNode {
+  popupExternalAction=(isVisible:boolean,value:string)=>{
+    this.setState({popupView:isVisible});
+    if(value!==''){
+      this.props.frameAdded(value,null,{x:500,y:500});
+    }
+  }
+  render(){
     return(
-      <Navbar className='bg-dark text-end m-0 p-0' style={{position:'absolute',zIndex:9999,height:'5vh',width:'100%'}}>
-        <Button style={{zIndex:99999,width:'10%',height:'100%',margin:'0px',padding:'0px',borderRadius:'0px',fontSize:'3vh'}} onClick={()=>{this.props.frameAdded('Write something here!',null,{x:500,y:500})}}>Add</Button>
-        <div style={{fontFamily:'Joystix',color:'white',fontSize:'5vh'}}>Logo</div>
-      </Navbar>
+      <div>
+        {this.state.popupView && <Popup label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
+        <div className='navBar'>
+          <div style={{fontFamily:'Joystix',color:'white',fontSize:'100%'}}>Logo</div>
+          <Button style={{zIndex:999,width:'10%',height:'100%',margin:'0px',padding:'0px',borderRadius:'0px',fontSize:'3vh'}} 
+                  onClick={()=>{this.setState({popupView:true})}}>Add</Button>
+                  <Button style={{zIndex:999,width:'10%',height:'100%',margin:'0px',padding:'0px',borderRadius:'0px',fontSize:'3vh'}} 
+                  onClick={()=>{
+                    this.props.framesZoom(1.5);
+                  }}>+</Button>
+        </div>
+      </div>
     );
   }
 }
-const Nav_w = applyConnectors(Nav,[framesDispatchConnector])
+const Interface_w = applyConnectors(Interface,[framesDispatchConnector]);
+
 root.render(
   <React.StrictMode>
     <Provider store={store}>
-      <Nav_w>
-
-      </Nav_w>
-    
+      <Interface_w/>   
       <App_w/>
     </Provider>
   </React.StrictMode>

@@ -272,19 +272,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWid
   }
  }
  loadEmbed(){
-    // var load = ()=>{
-    //   var img = new Image();
-    //   img.src = this.props.embedLink!.url;
-    //   var ratio = img.width/img.height;
-    //   img.onload = ()=>{
-    //     this.setState({embedRatio:ratio,embedFullWidth:img.width,embedFullHeight:img.height,embedContent:this.props.embedLink});
-    //     if(ratio>=1){ //horizontal orientation
-    //       this.props.embedSetMaxSizes(this.props.id,{x:400,y:400/ratio});
-    //     } else { //vertical orientation
-    //       this.props.embedSetMaxSizes(this.props.id,{x:600*ratio,y:600});
-    //     }
-    //   }
-    // }
     var deleteEmbed = ()=>{
       this.props.embedRemoved(this.props.id);
       this.setState({embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false});
@@ -302,13 +289,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWid
     if(this.props.embedLink!==null && this.props.embedLink.maxSizes!==null){
       switch(this.props.embedLink.type as string){
         case 'image':{
-          // if(this.state.embedContent!=null){
-          //   if(this.props.embedLink.url != this.state.embedContent.url){
-          //     load();
-          //   }
-          // } else {
-          //   load();
-          // }
           var padding = parseFloat(styles.framePadding);
           var img = <div onMouseEnter={onMouseEnterImage}
                          onMouseLeave={onMouseLeaveImage}>
@@ -835,7 +815,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   render(){
     return(
-      <div style={{position:'absolute',overflow:'hidden'}} className='app'>
+      <div style={{position:'absolute',overflow:'scroll'}} className='app'>
         {this.state.popupView && <Popup label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
         <Tracker_w frameMoved={this.props.frameMoved}/>
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}

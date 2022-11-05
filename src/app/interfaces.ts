@@ -79,6 +79,7 @@ interface Payload{
     id2?:number,
     label?:string,
     embedLink?:EmbedData|null,
+    multiplier?:number,
     maxSizes?:Position,
     coordinate?:string,
     maxSize?:number,
