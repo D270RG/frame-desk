@@ -7,7 +7,10 @@ $shadedColor:rgba(0, 0, 0, 0.366);
 $frameMinWidth: 150px;
 $frameMinHeight: 40px;
 $handleHeight: 25px;
+$handleBorderRadius: 10px;
+$frameBorderRadius: 10px;
 $embedAddedButtonHeight: 25px;
+$lineStrokeWidth: 2px;
 
 $framePadding: 8px;
 $editMarkerSize: 50px;
@@ -33,11 +36,16 @@ body{
     background-color: $backgroundColor;
     overflow:scroll;
 }
+.holoButton{
+    outline:none;
+    border:none;
+    cursor: pointer;
+    background-color:$backgroundColor;
+    color:$textColor;
+}
 .frame{
-    border-radius:10px;
+    border-radius:$frameBorderRadius;
     &.wrap{
-      min-width:$frameMinWidth;
-      min-height:$frameMinHeight;
       text-align:center;
       position: absolute;
       border:none;
@@ -54,7 +62,7 @@ body{
     &.handle{
         width:100%;
         height:$handleHeight;
-        border-radius: 10px;
+        border-radius: $handleBorderRadius;
         background-color:$secondaryColor;
         cursor:pointer;
     }
@@ -78,7 +86,7 @@ body{
 }
 .line,#svg-line{
     stroke: $secondaryColor;
-    stroke-width: 3px;
+    stroke-width: $lineStrokeWidth;
     cursor: pointer;
     pointer-events: auto;
     z-index:1
@@ -183,7 +191,11 @@ body{
     editMarkerSize: $editMarkerSize;
     frameMinWidth: $frameMinWidth;
     frameMinHeight: $frameMinHeight;
+    frameBorderRadius: $frameBorderRadius;
 
     handleHeight: $handleHeight;
+    handleBorderRadius: $handleBorderRadius;
     embedAddedButtonHeight: $embedAddedButtonHeight;
+
+    lineStrokeWidth: $lineStrokeWidth;
   }

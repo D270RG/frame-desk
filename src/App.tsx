@@ -1,17 +1,13 @@
-import React, { DetailedHTMLProps, ReactComponentElement, Ref } from 'react';
+import React, { DetailedHTMLProps, MouseEvent, ReactComponentElement, Ref } from 'react';
 import logo from './logo.svg';
 import './App.scss';
 import styles from './App.scss';  
-
-import {Button} from 'react-bootstrap';
-import '../node_modules/bootstrap/scss/bootstrap.scss'
 import ReactDOM from 'react-dom';
 import {useState,useEffect,useRef} from 'react'
 
 import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
 import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
-import {Popup} from './modals'
-import type {popupProps} from './modals'
+import {Popup,CButton} from './reusableComponents'
 import type {RootState} from './app/store'
 import {elementEditStateConnector,elementsStateConnector,
 
@@ -23,69 +19,97 @@ import {elementEditStateConnector,elementsStateConnector,
   applyConnectors} from './app/mappers'
 import { isEmptyBindingElement } from 'typescript';
 import { link } from 'fs/promises';
-const _frameMinWidth = parseInt(styles.frameMinWidth, 10);
-const _frameMinHeight = parseInt(styles.frameMinHeight, 10);
-const _framePadding = parseInt(styles.framePadding,10);
-const _handleHeight = parseInt(styles.handleHeight,10);
-const _embedAddedButtonHeight = parseInt(styles.embedAddedButtonHeight,10);
-const _additionalFrameHeight = 2*_framePadding+_handleHeight+_embedAddedButtonHeight;
-const _additionalFrameHeightWithEmbed = 2*_framePadding+_handleHeight;
 
+const _frameMinWidth = parseFloat(styles.frameMinWidth);
+const _frameMinHeight = parseFloat(styles.frameMinHeight);
+const _framePadding = parseFloat(styles.framePadding);
+const _frameBorderRadius = parseFloat(styles.frameBorderRadius);
 
-interface EditBoxProps extends ConnectedProps<typeof embedDispatchConnector>{
-  id:number,
-  ratio:number,
-  type:string,
-  childRef:React.RefObject<any>
-  embedContent:EmbedData,
-  embedFullSize:Position,
-  child:JSX.Element[] | JSX.Element,
-}
-class EditBox extends React.Component<EditBoxProps,{relScale:any}>{
-  editBoxRef;
-  editClickboxRef;
-  resizeRef;
-  markerRefs:React.RefObject<any>[] = [];
-  constructor(props:any){
-    super(props);
-    this.editBoxRef = React.createRef<any>();
-    this.editClickboxRef = React.createRef<any>();
-    this.resizeRef = React.createRef<any>();
-  }
-  handleChange(){
-    if(this.props.ratio>=1){
-      return((Math.round(this.props.embedContent.maxSizes.x*100/this.props.embedFullSize.x))+'%');
-    } else {
-      return((Math.round(this.props.embedContent.maxSizes.y*100/this.props.embedFullSize.y))+'%');
-    }
-  }
-  render(){
-    return(
-      <div>
-        <div style={{display:'flex',flexDirection:'row',height:'50px',width:'100%'}}>
-        <div style={{height:'50px',width:'100px',backgroundColor:'white'}}>{(Math.round(this.props.embedContent.maxSizes.x*100/this.props.embedFullSize.x))+'%'}</div>
-        <Button style={{height:'50px',padding:'15px',margin:'0px'}} 
-                onClick={(e)=>{
-                  this.props.embedScaleMaxSize(this.props.id,'xy',1.1);        
-                }}>+</Button>
-        <Button style={{height:'50px',padding:'15px',margin:'0px'}} 
-                onClick={(e)=>{
-                  this.props.embedScaleMaxSize(this.props.id,'xy',0.9);
-                }}>-</Button>
-        </div>
-            {this.props.child}
-        </div>
-    );
-  }
-}
-const EditBox_w = applyConnectors(EditBox,[embedDispatchConnector]);
+const _handleHeight = parseFloat(styles.handleHeight);
+const _handleBorderRadius = parseFloat(styles.handleBorderRadius);
+const _embedAddedButtonHeight = parseFloat(styles.embedAddedButtonHeight);
 
+const _lineStrokeWidth = parseFloat(styles.lineStrokeWidth);
+const _fontSize = 15;
 
-
+//-----------Legacy Component------------------------
+// interface EditBoxProps extends ConnectedProps<typeof embedDispatchConnector>{
+//   id:number,
+//   type:string,
+//   childRef:React.RefObject<any>
+//   embedContent:EmbedData,
+//   child:JSX.Element[] | JSX.Element,
+//   zoomMultiplier:number,
+//   deleteTooltipVisible:boolean,
+//   embedPadding:number,
+//   deleteEmbedCallback:any
+// }
+// class EditBox extends React.Component<EditBoxProps,{relScale:any}>{
+//   editBoxRef;
+//   editClickboxRef;
+//   resizeRef;
+//   markerRefs:React.RefObject<any>[] = [];
+//   constructor(props:any){
+//     super(props);
+//     this.editBoxRef = React.createRef<any>();
+//     this.editClickboxRef = React.createRef<any>();
+//     this.resizeRef = React.createRef<any>();
+//   }
+//   render(){
+//     return(
+//       <div>
+//         {this.props.deleteTooltipVisible&&
+//                       <div className='embedDeleteTooltip'
+//                             style={{position:'absolute',
+//                                   display:'flex',
+//                                   flexDirection:'row-reverse',
+//                                   pointerEvents:'none',
+//                                   top:'calc(100% - '+(this.props.embedContent.maxSizes.y+1*this.props.embedPadding)*this.props.zoomMultiplier+'px)',
+//                                   left:this.props.embedPadding+'px',
+//                                   height:(50*this.props.zoomMultiplier).toString()+'px',
+//                                   width:'calc(100% - '+2*this.props.embedPadding+'px)'}}>
+//                         <Button style={{height:'100%',pointerEvents:'auto'}} onClick={this.props.deleteEmbedCallback}><div style={{fontSize:(_fontSize*this.props.zoomMultiplier).toString()+'px'}}>Delete</div></Button>
+//                       </div>}
+//         <div style={{display:'flex',flexDirection:'row',alignItems:'center',justifyContent:'center',width:'100%'}}>
+//           <button  className='holoButton left'
+//                    style={{width:'50%',fontSize:(30*this.props.zoomMultiplier).toString()+'px',
+//                           // borderTopLeftRadius:(_frameBorderRadius*this.props.zoomMultiplier).toString()+'px',
+//                           // borderBottomLeftRadius:(_frameBorderRadius*this.props.zoomMultiplier).toString()+'px',
+//                         }}
+//                    onClick={(e: any)=>{
+//                     this.props.embedScaleMaxSize(this.props.id,'xy',1.1);        
+//                    }}>+</button>
+//           <button  className='holoButton right'
+//                    style={{width:'50%',fontSize:(30*this.props.zoomMultiplier).toString()+'px',
+//                           // borderTopRightRadius:(_frameBorderRadius*this.props.zoomMultiplier).toString()+'px',
+//                           // borderBottomRightRadius:(_frameBorderRadius*this.props.zoomMultiplier).toString()+'px'
+//                          }}
+//                    onClick={(e: any)=>{
+//                     this.props.embedScaleMaxSize(this.props.id,'xy',0.9);
+//                    }}>-</button>
+//           </div>
+//           {this.props.child}
+//         </div>
+//     );
+//   }
+// }
+// const EditBox_w = applyConnectors(EditBox,[embedDispatchConnector]);
+//-------Implementation------------------
+// <EditBox_w id={this.props.id} 
+//            embedContent={this.props.embedLink}               
+//            childRef={this.embedRef}  
+//            type='image' 
+//            zoomMultiplier={this.props.zoomMultiplier}
+//            child={img}
+//            deleteEmbedCallback={deleteEmbed}
+//            embedPadding={parseFloat(styles.framePadding)}
+//            deleteTooltipVisible={this.state.deleteTooltipVisible}
+//            />
 
 interface ControlBoxProps extends ConnectedProps<typeof embedDispatchConnector>{
   id:number,
   child:JSX.Element,
+  zoomMultiplier:number,
   embedPopupCallback: (arg0: boolean, arg1: any) => void,
 }
 class ControlBox extends React.Component<ControlBoxProps,{}>{
@@ -95,11 +119,15 @@ class ControlBox extends React.Component<ControlBoxProps,{}>{
   render(){
     return(
       <div>
-        <div style={{display:'flex',flexDirection:'row',height:'50px',width:'100%'}}>
-        <Button style={{padding:'15px',margin:'0px'}} 
-                onClick={(e)=>{
-                  this.props.embedPopupCallback(true,this.props.id);
-                }}>Add image</Button>
+        <div style={{display:'flex',flexDirection:'row',height:(50*this.props.zoomMultiplier).toString()+'px',width:'100%'}}>
+          <button  className='holoButton' style={{padding:'15px',margin:'0px'}} 
+                  onClick={(e)=>{
+                    this.props.embedPopupCallback(true,this.props.id);
+                  }}>
+                    <div style={{fontSize:(_fontSize*this.props.zoomMultiplier).toString()+'px'}}>
+                      Add image
+                    </div>
+          </button>
         </div>
             {this.props.child}
         </div>
@@ -129,14 +157,14 @@ interface FrameProps extends ConnectedProps<typeof pseudolinkEffectConnector>,
   zIndex:number,
   frameH:number,
   frameW:number,
-  radius:number,
+  zoomMultiplier:number,
   isSelected:boolean,
   dragCallback:(fromId: number, eventX: number, eventY: number) => void,
   createLinkCallback:(fromId: number) => void,
   popupCallback:(isVisible: boolean, id: number) => void
 }
 
-class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWidth:number|null,embedFullHeight:number|null,embedRatio:any,deleteTooltipVisible:boolean}>{
+class Frame extends React.Component<FrameProps,{maxTextWidth:number,deleteTooltipVisible:boolean}>{
  wrapRef = React.createRef<any>();
  handleRef = React.createRef<any>();
  contentRef = React.createRef<any>();
@@ -145,7 +173,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWid
  textRef = React.createRef<any>();
  constructor(props:any){
   super(props);
-  this.state = {maxTextWidth:this.props.frameW,embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false}
+  this.state = {maxTextWidth:this.props.frameW,deleteTooltipVisible:false}
  }
  resize(extSize:Position|null){
   if(extSize === null){
@@ -274,10 +302,9 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWid
  loadEmbed(){
     var deleteEmbed = ()=>{
       this.props.embedRemoved(this.props.id);
-      this.setState({embedFullWidth:null,embedFullHeight:null,embedRatio:null,deleteTooltipVisible:false});
+      this.setState({deleteTooltipVisible:false});
     }
     var onError = ()=>{
-      console.log(this.props.embedLink.url,'error');
       this.props.embedAdded(this.props.id,'image',require('./noimage.png'),{x:400,y:400});
     }
     var onMouseEnterImage = ()=>{
@@ -290,37 +317,52 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWid
       switch(this.props.embedLink.type as string){
         case 'image':{
           var padding = parseFloat(styles.framePadding);
-          var img = <div onMouseEnter={onMouseEnterImage}
-                         onMouseLeave={onMouseLeaveImage}>
+          var img = <div>
                       <img ref={this.embedRef} 
                         draggable='false' 
                         style={{
-                                width:this.props.embedLink.maxSizes.x,
-                                height:this.props.embedLink.maxSizes.y}} 
+                                width:this.props.embedLink.maxSizes.x*this.props.zoomMultiplier,
+                                height:this.props.embedLink.maxSizes.y*this.props.zoomMultiplier}} 
                         src={this.props.embedLink.url}
                         onError={onError}>
-                      </img>
-                      {this.state.deleteTooltipVisible&&
-                      <div className='embedDeleteTooltip'
-                            style={{position:'absolute',
-                                  display:'flex',
-                                  flexDirection:'row-reverse',
-                                  top:'calc(100% - '+(this.props.embedLink.maxSizes.y+1*padding)+'px)',
-                                  left:padding+'px',
-                                  height:'60px',
-                                  width:'calc(100% - '+2*padding+'px)'}}>
-                        <Button style={{height:'100%',width:'10%'}} onClick={deleteEmbed}>Delete</Button>
-                      </div>}
+                      </img>           
                     </div>
           if(this.props.editId===this.props.id){
+            var padding = parseFloat(styles.framePadding);
             return(
-              <EditBox_w id={this.props.id} 
-                       embedContent={this.props.embedLink} 
-                       embedFullSize={{x:this.state.embedFullWidth as number,y:this.state.embedFullHeight as number}} 
-                       childRef={this.embedRef} 
-                       ratio={this.state.embedRatio} 
-                       type='image' 
-                       child={img}/>);
+              <div onMouseEnter={onMouseEnterImage}
+                   onMouseLeave={onMouseLeaveImage}>
+                {this.state.deleteTooltipVisible&&
+                  <div className='embedDeleteTooltip'
+                        style={{position:'absolute',
+                                display:'flex',
+                                flexDirection:'row-reverse',
+                                top:'calc(100% - '+(this.props.embedLink.maxSizes.y+1*padding)*this.props.zoomMultiplier+'px)',
+                                left:padding+'px',
+                                height:(50*this.props.zoomMultiplier).toString()+'px',
+                                width:'calc(100% - '+2*padding+'px)'}}>
+
+                    <button className='holoButton' style={{height:'100%'}} onClick={()=>{deleteEmbed()}}>
+                      <div style={{fontSize:(_fontSize*this.props.zoomMultiplier).toString()+'px'}}>Delete</div>
+                    </button>
+
+                    <button className='holoButton'
+                              style={{fontSize:(30*this.props.zoomMultiplier).toString()+'px'}}
+                              onClick={(e: any)=>{
+                              this.props.embedScaleMaxSize(this.props.id,'xy',0.9);
+                              }}>-</button>
+
+                    <button  className='holoButton'
+                             style={{fontSize:(30*this.props.zoomMultiplier).toString()+'px'}}
+                             onClick={(e: any)=>{
+                                this.props.embedScaleMaxSize(this.props.id,'xy',1.1);        
+                             }}>+</button>
+
+                     </div>
+                }
+                {img}
+              </div>
+              );
           } else {
             return(img);
           }
@@ -330,6 +372,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWid
       return(
         <ControlBox_w id={this.props.id} 
                     embedPopupCallback={this.props.popupCallback}
+                    zoomMultiplier={this.props.zoomMultiplier}
                     child={<div></div>}/>
       );
     }
@@ -338,6 +381,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWid
   var pseudolink:JSX.Element = 
     <line x1={this.props.position.x+this.props.size.x/2} y1={this.props.position.y+this.props.size.y/2} 
           x2={this.props.effectsDataPseudolink.endPos!.x} y2={this.props.effectsDataPseudolink.endPos!.y} 
+          style={{strokeWidth:(_lineStrokeWidth*this.props.zoomMultiplier).toString()+'px'}}
           id = 'svg-line'
     />
     return(
@@ -345,12 +389,17 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,embedFullWid
         <div className={this.props.isSelected ? 'frame wrap active' : 'frame wrap'} 
           style={{
               left:this.props.position.x,
-              top:this.props.position.y
+              top:this.props.position.y,
+              borderRadius:_frameBorderRadius*this.props.zoomMultiplier,
+              padding:_framePadding*this.props.zoomMultiplier
            }} 
           ref={this.wrapRef}>
-              <div className='frame handle' ref={this.handleRef}></div>
+              <div className='frame handle' style={{height:_handleHeight*this.props.zoomMultiplier,
+                                                    borderRadius:_handleBorderRadius*this.props.zoomMultiplier,
+                                                  }} 
+                   ref={this.handleRef}></div>
               <div ref={this.contentRef} style={{alignItems:'center',justifyContent:'center',textAlign:'center'}}>
-                <div ref={this.textRef} style={{maxWidth:this.state.maxTextWidth}} className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
+                <div ref={this.textRef} style={{maxWidth:this.state.maxTextWidth*this.props.zoomMultiplier,fontSize:(this.props.zoomMultiplier*20).toString()+'px'}} className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
                   {this.renderText()}
                 </div>
                 <div className='frame embed'>
@@ -388,12 +437,13 @@ interface LineProps extends ConnectedProps<typeof linksDispatchConnector>{
   x2:number,
   y2:number,
   id1:number,
-  id2:number
+  id2:number,
+  zoomMultiplier:number
 }
 class Line extends React.Component<LineProps,{}>{
   ref = React.createRef<any>();
 
-  onDoubleClick=(e:MouseEvent)=>{
+  onDoubleClick=(e: any)=>{
     this.props.linkRemoved(this.props.id1,this.props.id2);
   }
   componentDidMount(){
@@ -405,7 +455,7 @@ class Line extends React.Component<LineProps,{}>{
   render(){
     return(
       <line x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} ref={this.ref}
-      className='line'>
+      className='line' style={{strokeWidth:(_lineStrokeWidth*this.props.zoomMultiplier).toString()+'px'}}>
       </line>
     );
   }
@@ -420,7 +470,8 @@ interface LinkProps extends ConnectedProps<typeof framesDispatchConnector>{
   x2:number,
   y2:number,
   id1:number,
-  id2:number
+  id2:number,
+  zoomMultiplier:number
 }
 class Link extends React.Component<LinkProps,{}>{
   ref = React.createRef<HTMLInputElement>();
@@ -431,7 +482,7 @@ class Link extends React.Component<LinkProps,{}>{
     return(
       <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
         <Line_w x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} 
-        id1={this.props.id1} id2={this.props.id2}/>
+        id1={this.props.id1} id2={this.props.id2} zoomMultiplier={this.props.zoomMultiplier}/>
       </svg>
     );
   }
@@ -455,7 +506,7 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     super(props);
   }
   clickboxHandlers={
-    onMouseDown:(e:MouseEvent)=>{
+    onMouseDown:(e: any)=>{
       if (e.button !== 0) return
       if(this.props.editId!==null){
         this.props.frameSetEdit(null);
@@ -468,7 +519,7 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
       }
        //todo: 4 actions -> 1 action
     },
-    onMouseUp:(e:MouseEvent)=>{
+    onMouseUp:(e:any)=>{
       if(this.props.effectsDataSelectionBox.isActive){ //todo: unlink effects isActive from positions to fix redundant clickbox redraw
         this.props.areaSelectionCallback(this.props.effectsDataSelectionBox.startPos,this.props.effectsDataSelectionBox.endPos);
       }
@@ -526,7 +577,7 @@ class Tracker extends React.Component<TrackerProps,{}>{
   constructor(props:any){
     super(props);
   }
-  onMouseMove=(e:MouseEvent)=>{
+  onMouseMove=(e:any)=>{
     if(this.props.effectsDataAll['pseudolinkEffect'].isActive){
       this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
         y: e.pageY});
@@ -559,7 +610,8 @@ const Tracker_w = applyConnectors(Tracker,[allEffectsConnector,
 
 interface SelectionBoxProps extends ConnectedProps<typeof selectionBoxEffectConnector>,
                                     ConnectedProps<typeof effectsDispatchConnector>{
-  zIndex:number
+  zIndex:number,
+  zoomMultiplier:number
 }
 class SelectionBox extends React.Component<SelectionBoxProps,{}>{
   createSelectionRectangle(startPosition:Position,endPosition:Position){
@@ -568,18 +620,22 @@ class SelectionBox extends React.Component<SelectionBoxProps,{}>{
         <line
           x1={startPosition.x} y1={startPosition.y}
           x2={endPosition.x} y2={startPosition.y}
+          style={{strokeWidth:(_lineStrokeWidth*this.props.zoomMultiplier).toString()+'px'}}
           id='svg-selectionBox'/>
           <line
           x1={endPosition.x} y1={startPosition.y}
           x2={endPosition.x} y2={endPosition.y}
+          style={{strokeWidth:(_lineStrokeWidth*this.props.zoomMultiplier).toString()+'px'}}
           id='svg-selectionBox'/>
           <line
           x1={endPosition.x} y1={endPosition.y}
           x2={startPosition.x} y2={endPosition.y}
+          style={{strokeWidth:(_lineStrokeWidth*this.props.zoomMultiplier).toString()+'px'}}
           id='svg-selectionBox'/>
           <line
           x1={startPosition.x} y1={endPosition.y}
           x2={startPosition.x} y2={startPosition.y}
+          style={{strokeWidth:(_lineStrokeWidth*this.props.zoomMultiplier).toString()+'px'}}
           id='svg-selectionBox'/>
       </svg>
     );
@@ -610,6 +666,7 @@ interface AppProps extends ConnectedProps<typeof elementsStateConnector>,
                            ConnectedProps<typeof selectionDispatchConnector>,
                            ConnectedProps<typeof effectsDispatchConnector>,
                            ConnectedProps<typeof elementEditDispatchConnector>{
+  zoomMultiplier:number;
 
 }
 class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,popupId:number}>{
@@ -664,6 +721,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
           y1={positions.y1}
           x2={positions.x2}
           y2={positions.y2}
+          zoomMultiplier={this.props.zoomMultiplier}
           zIndex={zIndex}
       />);
     });
@@ -672,7 +730,6 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   copySelected(){
     if(this.props.selectedIds.length>0){
       var frameArr:any[] = [];
-      var oldFrameIds:number[] = [];
       this.props.selectedIds.forEach((id:number)=>{
         frameArr.push(posShift(this.props.framesData[id],{x:20,y:20}));
       });
@@ -710,7 +767,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
       // Check for ctrl+c, v and x
       else if (ctrlDown && c==67) {
         this.copySelected();
-      } // c
+      } // cs
       else if (ctrlDown && c==86) {
         this.pasteSelected();
       } // v
@@ -756,7 +813,6 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     var img = new Image();
     img.src = url;
     img.onload = ()=>{
-      console.log(id,'load');
       var ratio = img.width/img.height;
       if(ratio>=1){ //horizontal orientation
         const size = {x:400,y:400/ratio};
@@ -803,7 +859,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
                        zIndex={zIndex}
                        frameH={_frameMinHeight} 
                        frameW={_frameMinWidth} 
-                       radius={24} 
+                       zoomMultiplier={this.props.zoomMultiplier}
                isSelected={isSelected}
                dragCallback={this.dragCallback}
                createLinkCallback={this.createLinkCallback}
@@ -822,7 +878,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
                                areaDeselectionCallback={this.props.elementsDeselected}/>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}
-        <SelectionBox_w zIndex={999}/>
+        <SelectionBox_w zIndex={999} zoomMultiplier={this.props.zoomMultiplier}/>
       </div>
     );
   };
