@@ -1,14 +1,10 @@
-import React, { DetailedHTMLProps, MouseEvent, ReactComponentElement, Ref } from 'react';
-import logo from './logo.svg';
+import React, {MouseEvent} from 'react';
 import './App.scss';
 import styles from './App.scss';  
-import ReactDOM from 'react-dom';
-import {useState,useEffect,useRef} from 'react'
 
 import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
-import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
-import {Popup,CButton} from './reusableComponents'
-import type {RootState} from './app/store'
+import {ConnectedProps} from 'react-redux'
+import {Popup} from './reusableComponents'
 import {elementEditStateConnector,elementsStateConnector,
 
   elementEditDispatchConnector,embedDispatchConnector,framesDispatchConnector,linksDispatchConnector,selectionDispatchConnector,
@@ -17,8 +13,6 @@ import {elementEditStateConnector,elementsStateConnector,
   allEffectsConnector,effectsDispatchConnector,
 
   applyConnectors} from './app/mappers'
-import { isEmptyBindingElement } from 'typescript';
-import { link } from 'fs/promises';
 
 const _frameMinWidth = parseFloat(styles.frameMinWidth);
 const _frameMinHeight = parseFloat(styles.frameMinHeight);
@@ -27,7 +21,6 @@ const _frameBorderRadius = parseFloat(styles.frameBorderRadius);
 
 const _handleHeight = parseFloat(styles.handleHeight);
 const _handleBorderRadius = parseFloat(styles.handleBorderRadius);
-const _embedAddedButtonHeight = parseFloat(styles.embedAddedButtonHeight);
 
 const _lineStrokeWidth = parseFloat(styles.lineStrokeWidth);
 const _fontSize = 15;
@@ -294,7 +287,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,deleteToolti
  }
  renderText(){
   if(this.props.editId===this.props.id){
-    return(<textarea style={{boxSizing:'border-box',width:'100%'}} rows={5} ref={this.relabelRef} defaultValue={this.props.text}/>)
+    return(<textarea style={{padding:'0px',margin:'0px',border:'none',boxSizing:'border-box',width:'100%',fontSize:(30*this.props.zoomMultiplier).toString()+'px'}} rows={5} ref={this.relabelRef} defaultValue={this.props.text}/>)
   } else {
     return(this.props.text)
   }
@@ -314,9 +307,9 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,deleteToolti
       this.setState({deleteTooltipVisible:false})
     }
     if(this.props.embedLink!==null && this.props.embedLink.maxSizes!==null){
+      var padding = parseFloat(styles.framePadding);
       switch(this.props.embedLink.type as string){
         case 'image':{
-          var padding = parseFloat(styles.framePadding);
           var img = <div>
                       <img ref={this.embedRef} 
                         draggable='false' 
@@ -328,19 +321,21 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,deleteToolti
                       </img>           
                     </div>
           if(this.props.editId===this.props.id){
-            var padding = parseFloat(styles.framePadding);
+
             return(
               <div onMouseEnter={onMouseEnterImage}
-                   onMouseLeave={onMouseLeaveImage}>
+                   onMouseLeave={onMouseLeaveImage} style={{height:'100%',width:'100%'}}>
                 {this.state.deleteTooltipVisible&&
                   <div className='embedDeleteTooltip'
                         style={{position:'absolute',
+                                padding:'0px',
+                                margin:'0px',
                                 display:'flex',
                                 flexDirection:'row-reverse',
-                                top:'calc(100% - '+(this.props.embedLink.maxSizes.y+1*padding)*this.props.zoomMultiplier+'px)',
-                                left:padding+'px',
+                                top:'calc(100% - '+(this.props.embedLink.maxSizes.y+2*padding)*this.props.zoomMultiplier+'px)',
+                                left:padding*this.props.zoomMultiplier+'px',
                                 height:(50*this.props.zoomMultiplier).toString()+'px',
-                                width:'calc(100% - '+2*padding+'px)'}}>
+                                width:'calc(100% - '+2*padding*this.props.zoomMultiplier+'px)'}}>
 
                     <button className='holoButton' style={{height:'100%'}} onClick={()=>{deleteEmbed()}}>
                       <div style={{fontSize:(_fontSize*this.props.zoomMultiplier).toString()+'px'}}>Delete</div>
@@ -349,7 +344,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,deleteToolti
                     <button className='holoButton'
                               style={{fontSize:(30*this.props.zoomMultiplier).toString()+'px'}}
                               onClick={(e: any)=>{
-                              this.props.embedScaleMaxSize(this.props.id,'xy',0.9);
+                                this.props.embedScaleMaxSize(this.props.id,'xy',0.9);
                               }}>-</button>
 
                     <button  className='holoButton'
@@ -399,7 +394,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number,deleteToolti
                                                   }} 
                    ref={this.handleRef}></div>
               <div ref={this.contentRef} style={{alignItems:'center',justifyContent:'center',textAlign:'center'}}>
-                <div ref={this.textRef} style={{maxWidth:this.state.maxTextWidth*this.props.zoomMultiplier,fontSize:(this.props.zoomMultiplier*20).toString()+'px'}} className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
+                <div ref={this.textRef} style={{margin:'0px',padding:'0px',maxWidth:this.state.maxTextWidth*this.props.zoomMultiplier,fontSize:(this.props.zoomMultiplier*20).toString()+'px'}} className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
                   {this.renderText()}
                 </div>
                 <div className='frame embed'>

@@ -40,6 +40,8 @@ body{
     outline:none;
     border:none;
     cursor: pointer;
+    padding:0px;
+    margin:0px;
     background-color:$backgroundColor;
     color:$textColor;
 }
@@ -69,13 +71,13 @@ body{
     &.text{
         max-width:$frameMinWidth;
         width:100%;
-        padding:3px;
+        padding:0px;
         color:$textColor;
         word-break: break-word;
     }
     &.text-embed{
         width:100%;
-        padding:3px;
+        padding:0px;
         color:$textColor;
         word-break: break-word;
     }
