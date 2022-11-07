@@ -137,6 +137,25 @@ declare module 'csstype' {
       );
     }
   }
-  export {ScalableButton,ScalableSvgLine,ScalableDiv,ScalableImg}
+
+  interface scalableTextareaProps{
+    rows?:number,
+    defaultValue?:string
+  }
+  class ScalableTextarea extends ScalableComponent<scalableTextareaProps,{}>{
+    constructor(props:scalableTextareaProps&scalableContainerProps){
+        super(props);
+    }
+    render(){
+        var calculatedStyles = this.mapStyles(this.props.style);
+        return(<textarea id={this.props.id}
+                         className={this.props.className}
+                         style={calculatedStyles} 
+                         rows={this.props.rows} 
+                         ref={this.props.passedRef} 
+                         defaultValue={this.props.defaultValue}/>);
+    }
+  }
+  export {ScalableButton,ScalableSvgLine,ScalableDiv,ScalableImg,ScalableTextarea}
 
 

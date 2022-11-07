@@ -5,7 +5,7 @@ import styles from './App.scss';
 import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
 import {ConnectedProps} from 'react-redux'
 import {Popup} from './reusableComponents'
-import {ScalableButton,ScalableSvgLine,ScalableDiv,ScalableImg} from './scalableComponents'
+import {ScalableButton,ScalableSvgLine,ScalableDiv,ScalableImg,ScalableTextarea} from './scalableComponents'
 import {
   zoomStateConnector,zoomDispatchConnector,
 
@@ -31,7 +31,6 @@ const _fontSize = 20;
 interface ControlBoxProps extends ConnectedProps<typeof embedDispatchConnector>,
                                   ConnectedProps<typeof zoomStateConnector>{
   id:number,
-  child:JSX.Element,
   embedPopupCallback: (arg0: boolean, arg1: any) => void,
 }
 class ControlBox extends React.Component<ControlBoxProps,{}>{
@@ -40,8 +39,8 @@ class ControlBox extends React.Component<ControlBoxProps,{}>{
   }
   render(){
     return(
-      <div>
-        <ScalableDiv zoomMultiplier={this.props.zoomMultiplier} style={{display:'flex',flexDirection:'row',height:'50px',width:'100%'}}>
+        <ScalableDiv zoomMultiplier={this.props.zoomMultiplier} 
+                     style={{display:'flex',flexDirection:'row',height:'50px',width:'100%'}}>
           <ScalableButton className='holoButton'
                           style={{
                             borderRadius:_borderRadius,
@@ -49,11 +48,9 @@ class ControlBox extends React.Component<ControlBoxProps,{}>{
                           }}
                           zoomMultiplier={this.props.zoomMultiplier}
                           onClick={()=>{this.props.embedPopupCallback(true,this.props.id)}}>
-            Add image
+            <i className="bi bi-paperclip"></i>
           </ScalableButton>
         </ScalableDiv>
-            {this.props.child}
-        </div>
     );
   }
 }
@@ -208,7 +205,22 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  }
  renderText(){
   if(this.props.editId===this.props.id){
-    return(<textarea style={{padding:'0px',margin:'0px',resize:'none',border:'none',boxSizing:'border-box',width:'100%',fontSize:(25*this.props.zoomMultiplier).toString()+'px'}} rows={3} ref={this.relabelRef} defaultValue={this.props.text}/>)
+    return(
+      <div>
+        <ScalableTextarea className='pm-0 textarea' 
+                          style={{width:'100%',
+                                 fontSize:_fontSize,
+                                 padding:_framePadding,
+                                 borderRadius:_borderRadius
+                                }}
+                          zoomMultiplier={this.props.zoomMultiplier} 
+                          rows={3} 
+                          passedRef={this.relabelRef} 
+                          defaultValue={this.props.text}/>
+        {this.props.embedLink===null && <ControlBox_w id={this.props.id} 
+        embedPopupCallback={this.props.popupCallback}/>}
+      </div>
+    );
   } else {
     return(this.props.text)
   }
@@ -223,28 +235,27 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
     if(this.props.embedLink!==null && this.props.embedLink.maxSizes!==null){
       switch(this.props.embedLink.type as string){
         case 'image':{
-          var img = <div>
+          var img = <div className='pm-0'>
                       <ScalableImg ref={this.embedRef} 
                                    zoomMultiplier={this.props.zoomMultiplier}
                                    draggable={false}
-                                   className='pm-0'
                                    style={{
+                                          paddingTop:_framePadding*0.6,
                                           width:this.props.embedLink.maxSizes.x,
-                                          height:this.props.embedLink.maxSizes.y
+                                          height:this.props.embedLink.maxSizes.y,
+                                          borderRadius:_borderRadius*2
                                         }} 
                                    src={this.props.embedLink.url}
                                    onError={onError}>
                       </ScalableImg>           
                     </div>
           if(this.props.editId===this.props.id){
-
             return(
               <div>
                   <ScalableDiv zoomMultiplier={this.props.zoomMultiplier}
-                               className='embedDeleteTooltip'
+                               className='embedDeleteTooltip pm-0'
                                style={{
-                                  padding:'0px',
-                                  margin:'0px',
+                                  borderRadius:_borderRadius,
                                   display:'flex',
                                   flexDirection:'row-reverse',
                                   width:'100%',
@@ -257,31 +268,33 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                                       }}
                                       zoomMultiplier={this.props.zoomMultiplier}
                                       onClick={()=>{deleteEmbed()}}>
-                        Delete
+                        <i className="bi bi-trash"></i>
                       </ScalableButton>         
                     </div>
                     <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row'}}>
-                      <ScalableButton className='holoButton h-100'
+                      <ScalableButton className='holoButton h-100 m-0'
                                       style={{
-                                        borderRadius:0,
+                                        borderTopLeftRadius:_borderRadius,
+                                        borderBottomLeftRadius:_borderRadius,
                                         fontSize:30
                                       }}
                                       zoomMultiplier={this.props.zoomMultiplier}
                                       onClick={(e: any)=>{
                                         this.props.embedScaleMaxSize(this.props.id,'xy',0.9);
                                       }}>
-                          -
+                          <i className="bi bi-zoom-out"></i>
                       </ScalableButton> 
-                      <ScalableButton className='holoButton h-100'
+                      <ScalableButton className='holoButton h-100 m-0'
                                       style={{
-                                        borderRadius:0,
+                                        borderTopRightRadius:_borderRadius,
+                                        borderBottomRightRadius:_borderRadius,
                                         fontSize:30
                                       }}
                                       zoomMultiplier={this.props.zoomMultiplier}
                                       onClick={(e: any)=>{
                                         this.props.embedScaleMaxSize(this.props.id,'xy',1.1);
                                       }}>
-                          +
+                          <i className="bi bi-zoom-in"></i>
                       </ScalableButton>  
                     </div>
                 </ScalableDiv>
@@ -293,12 +306,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
           }
         }
       }
-    } else {
-      return(
-        <ControlBox_w id={this.props.id} 
-                    embedPopupCallback={this.props.popupCallback}
-                    child={<div></div>}/>
-      );
     }
  }
  render(){
@@ -326,6 +333,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                      passedRef={this.wrapRef}>
               <ScalableDiv className='frame handle'
                            style={{
+                              marginBottom: _framePadding*0.7,
                               height:_handleHeight,
                               borderRadius:_borderRadius,
                             }} 
@@ -336,9 +344,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
               <div ref={this.contentRef} style={{alignItems:'center',justifyContent:'center',textAlign:'center'}}>     
                 <ScalableDiv passedRef={this.textRef}
                              zoomMultiplier={this.props.zoomMultiplier}
-                             style={{paddingTop:_framePadding,
-                                     paddingBottom:_framePadding, 
-                                     margin:'0px',
+                             style={{
                                      maxWidth:this.state.maxTextWidth,
                                      fontSize:_fontSize
                                     }}
@@ -648,6 +654,7 @@ interface AppProps extends ConnectedProps<typeof elementsStateConnector>,
                            ConnectedProps<typeof effectsDispatchConnector>,
                            ConnectedProps<typeof elementEditDispatchConnector>,
                            ConnectedProps<typeof zoomDispatchConnector>{
+  scrollbarsVisibility:boolean
 }
 class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,popupId:number}>{
   frameW = 150;
@@ -849,7 +856,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   render(){
     return(
-      <div style={{position:'absolute',overflow:'scroll'}} className='app'>
+      <div style={{position:'absolute',overflow:'scroll'}} 
+           className={this.props.scrollbarsVisibility? 'app' : 'app hideScrolls'}>
         {this.state.popupView && <Popup label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
         <Tracker_w frameMoved={this.props.frameMoved}/>
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}

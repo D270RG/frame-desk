@@ -15,10 +15,10 @@ const root = createRoot(document.getElementById('root') as HTMLElement);
 
 interface InterfaceProps extends ConnectedProps<typeof framesDispatchConnector>,
                                  ConnectedProps<typeof zoomDispatchConnector>{}
-class Interface extends React.Component<InterfaceProps,{popupView:boolean}>{
+class Interface extends React.Component<InterfaceProps,{popupView:boolean,scrollbarsVisibility:boolean}>{
   constructor(props:InterfaceProps){
     super(props);
-    this.state = {popupView:false}
+    this.state = {popupView:false,scrollbarsVisibility:true}
   }
   popupExternalAction=(isVisible:boolean,value:string)=>{
     this.setState({popupView:isVisible});
@@ -31,31 +31,47 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean}>{
       <div>
         {this.state.popupView && <Popup label='Enter label' externalStateAction={this.popupExternalAction}/>}
         <div className='navBar'>
-          <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row'}}>
-            <div className='logo' style={{display: 'inline-block'}}>
-              Logo
+          <div style={{width:'50%',height:'100%',marginTop:'12px',marginLeft:'5px',display:'flex',flexDirection:'row'}}>
+            <div className='logo' style={{display: 'inline-block',fontSize:'30px'}}>
+              Frame Desk
               </div>
           </div>
           <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row'}}>
             <button className='navButton'
+                    style={{
+                      fontSize:'20px'
+                    }} 
                     onClick={()=>{this.setState({popupView:true})}}>
-                Add
+                <i className="bi bi-plus-square"></i>
             </button>
             <button className='navButton'
+                    style={{
+                      fontSize:'25px'
+                    }}
                     onClick={()=>{
                       this.props.zoomIn(); //zoomIn
                     }}>
-                +
+                <i className="bi bi-zoom-in"></i>
             </button>
-            <button className='navButton' style={{zIndex:999,width:'10%',height:'100%',margin:'0px',padding:'0px',borderRadius:'0px',fontSize:'3vh'}} 
+            <button className='navButton'
+                    style={{
+                      fontSize:'25px'
+                    }} 
                     onClick={()=>{
                       this.props.zoomOut();//zoom out
                     }}>
-                -
+                <i className="bi bi-zoom-out"></i>
+            </button>
+            <button className='navButton'
+                    style={{
+                      fontSize:'20px'
+                    }} 
+                    onClick={()=>{this.setState({scrollbarsVisibility:!this.state.scrollbarsVisibility})}}>
+                <i className="bi bi-layout-sidebar-inset-reverse"></i>
             </button>
           </div> 
         </div>
-        <App_w/>
+        <App_w scrollbarsVisibility={this.state.scrollbarsVisibility}/>
       </div>
     );
   }

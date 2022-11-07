@@ -1,6 +1,9 @@
+@import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css");
+
 $primaryColor: rgb(40, 52, 73);
 $secondaryColor: rgb(83, 107, 148);
 $backgroundColor: rgb(25, 25, 29);
+$scrollbarColor: rgb(101, 113, 134);
 $outlineColor: rgba(110, 149, 215, 0.725);
 $textColor:rgb(166, 187, 224);
 $shadedColor:rgba(0, 0, 0, 0.366);
@@ -14,6 +17,7 @@ $lineStrokeWidth: 2px;
 
 $framePadding: 8px;
 $editMarkerSize: 50px;
+$outlineSize: 5px;
 
 $xs: 480px;
 $sm: 768px;
@@ -22,11 +26,44 @@ $lg: 1200px;
 $xl: 1600px;
 
 @font-face{
-    font-family:'Joystix';
-    src: url('./joystix_monospace.ttf') format('truetype');
+    font-family:'Gemsbuck';
+    src: url('./fonts/gemsbuck.ttf') format('truetype');
     font-style: normal;
     fornt-stretch: normal;
 }
+/* ===== Scrollbar CSS ===== */
+  /* Firefox */
+  .hideScrolls {
+    -ms-overflow-style: none;  /* Internet Explorer 10+ */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .hideScrolls::-webkit-scrollbar { 
+    display: none;  /* Safari and Chrome */
+  }
+  * {
+    scrollbar-width: auto;
+    scrollbar-color: $scrollbarColor $backgroundColor;
+  }
+
+  /* Chrome, Edge, and Safari */
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-track {
+    margin: 80px;
+    background: $backgroundColor;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: $scrollbarColor;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-corner {
+    background: $backgroundColor
+  }
+/*----------------------------------*/
 @mixin m-0{
     margin:0px;
 }
@@ -53,19 +90,25 @@ $xl: 1600px;
 .pm-0{
     @include pm-0;
 }
-@mixin btn($margin-x,$margin-y,$backgroundColor,$borderColor,$textColor,$borderRadius:""){
-    margin-left:$margin-x;
-    margin-right:$margin-x;
-    margin-top:$margin-y;
-    margin-bottom: $margin-y;
+@mixin btn($padding-x,$padding-y,$backgroundColor,$borderColor,$textColor,$borderRadius:""){
+    padding-left:$padding-x;
+    padding-right:$padding-x;
+    padding-top:$padding-y;
+    padding-bottom: $padding-y;
     
     background-color: $backgroundColor;
     border-color: $borderColor;
     color: $textColor;
 
+    text-align:center;
+    justify-content:center;
     user-select:none;
     cursor: pointer;
     outline:none;
+    &:focus{
+        position:relative;
+        outline:$outlineSize solid;
+    }
     border:none;
     @if(unquote($borderRadius)!=""){
         border-radius: unquote($borderRadius);
@@ -73,8 +116,21 @@ $xl: 1600px;
         border-radius: $borderRadius;
     }
 }
+.textarea{
+    box-sizing:border-box;
+    resize:none;
+    border:none;
+    color: $textColor;
+    background-color: $backgroundColor;
+    &:focus{
+        outline:$outlineSize solid;
+        position:relative;
+    }
+    outline:none;
+    width:100%;
+}
 .holoButton{
-    @include btn(2px,0px,$backgroundColor,$secondaryColor,$textColor);
+    @include btn($framePadding,0px,$backgroundColor,$secondaryColor,$textColor);
 }
 body{
     overflow:hidden;
@@ -85,11 +141,9 @@ body{
     width: 10%;
 }
 .logo{
-    font-family:'Joystix';
+    font-family:'Gemsbuck';
     user-select:none;
     color:$textColor;
-    top: 0px;
-    left: 0px;
 }
 .navBar{
     @include pm-0;
@@ -104,8 +158,7 @@ body{
     text-align: end;
 }
 .navButton{
-    @include btn(0px,0px,$backgroundColor,$secondaryColor,$textColor);
-    z-index:999;
+    @include btn($framePadding,0px,$backgroundColor,$secondaryColor,$textColor);
     width:'10%';
     height:'100%';
 }
@@ -136,7 +189,7 @@ body{
       user-select:none;
         &.active{
             color: $outlineColor;
-            outline: 8px solid;
+            outline: $outlineSize solid;
         }
     }
     &.handle{
@@ -149,16 +202,12 @@ body{
     &.text{
         max-width:$frameMinWidth;
         width:100%;
-        padding-top:$framePadding;
-        padding-bottom:$framePadding;
         color:$textColor;
         outline:none;
         word-break: break-word;
     }
     &.text-embed{
         width:100%;
-        padding-top:$framePadding;
-        padding-bottom:$framePadding;
         color:$textColor;
         outline:none;
         word-break: break-word;
@@ -169,7 +218,6 @@ body{
     }
 }
 .line,#svg-line{
-    position:absolute;
     stroke: $secondaryColor;
     stroke-width: $lineStrokeWidth;
     cursor: pointer;
@@ -232,7 +280,7 @@ body{
                 border-radius:10px;
                 &:focus{
                     color: $outlineColor;
-                    outline: 5px solid;
+                    outline: $outlineSize solid;
                 }
             }
             >.modalLabel{
@@ -245,7 +293,7 @@ body{
                 border:none;
                 &:focus{
                     color: $outlineColor;
-                    outline: 5px solid;
+                    outline: $outlineSize solid;
                 }
             }
     }
