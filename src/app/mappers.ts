@@ -1,8 +1,22 @@
 import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
 import {Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './interfaces'
-import {graphSlice,frameEditSlice,overlayEffectsSlice} from './reducers';
+import {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice} from './reducers';
 import type {RootState,RootDispatch} from './store'
 
+
+function mapZoomState(state:RootState){
+  return{
+    zoomMultiplier: state.zoomReducer.zoomMultiplier
+  }
+}
+const zoomStateConnector = connect(mapZoomState);
+
+const mapZoomDispatch=(dispatch:RootDispatch)=>({
+  zoomIn:()=>{dispatch(zoomSlice.actions.zoomIn({}))},
+  zoomOut:()=>{dispatch(zoomSlice.actions.zoomOut({}))}
+  //null -> no zoom,
+})
+const zoomDispatchConnector = connect(null,mapZoomDispatch);
 
 function mapElementEditState(state:RootState){
   return {
@@ -120,7 +134,9 @@ function applyConnectors(component: any & React.Component,connectors:any[]){
   return newComponent;
 }
 
-export {elementEditStateConnector,elementsStateConnector,
+export {zoomStateConnector,zoomDispatchConnector,
+
+        elementEditStateConnector,elementsStateConnector,
 
         elementEditDispatchConnector,embedDispatchConnector,framesDispatchConnector,linksDispatchConnector,selectionDispatchConnector,
         

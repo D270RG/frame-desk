@@ -7,17 +7,18 @@ import './index.css';
 
 import store from './app/store'
 import { Provider } from 'react-redux';
-import {framesDispatchConnector,applyConnectors} from './app/mappers';
+import {framesDispatchConnector,zoomDispatchConnector,applyConnectors} from './app/mappers';
 import {connect} from 'react-redux';
-import {Popup,CButton} from './reusableComponents';
+import {Popup} from './reusableComponents';
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
 
-interface InterfaceProps extends ConnectedProps<typeof framesDispatchConnector>{}
-class Interface extends React.Component<InterfaceProps,{popupView:boolean,zoomMultiplier:number}>{
+interface InterfaceProps extends ConnectedProps<typeof framesDispatchConnector>,
+                                 ConnectedProps<typeof zoomDispatchConnector>{}
+class Interface extends React.Component<InterfaceProps,{popupView:boolean}>{
   constructor(props:InterfaceProps){
     super(props);
-    this.state = {popupView:false,zoomMultiplier:1.0}
+    this.state = {popupView:false}
   }
   popupExternalAction=(isVisible:boolean,value:string)=>{
     this.setState({popupView:isVisible});
@@ -28,32 +29,38 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean,zoomMu
   render(){
     return(
       <div>
-        {this.state.popupView && <Popup label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
+        {this.state.popupView && <Popup label='Enter label' externalStateAction={this.popupExternalAction}/>}
         <div className='navBar'>
-          <div style={{fontFamily:'Joystix',color:'white',fontSize:'100%'}}>Logo</div>
-          <button className='holoButton' style={{zIndex:999,width:'10%',height:'100%',margin:'0px',padding:'0px',borderRadius:'0px',fontSize:'3vh'}} 
-                  onClick={()=>{this.setState({popupView:true})}}>
-              Add
-          </button>
-          <button className='holoButton' style={{zIndex:999,width:'10%',height:'100%',margin:'0px',padding:'0px',borderRadius:'0px',fontSize:'3vh'}} 
-                  onClick={()=>{
-                    this.setState({zoomMultiplier:(this.state.zoomMultiplier+0.1)});
-                  }}>
-              +
-          </button>
-          <button className='holoButton' style={{zIndex:999,width:'10%',height:'100%',margin:'0px',padding:'0px',borderRadius:'0px',fontSize:'3vh'}} 
-                  onClick={()=>{
-                    this.setState({zoomMultiplier:(this.state.zoomMultiplier-0.1)});
-                  }}>
-              -
-          </button>
+          <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row'}}>
+            <div className='logo' style={{display: 'inline-block'}}>
+              Logo
+              </div>
+          </div>
+          <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row'}}>
+            <button className='navButton'
+                    onClick={()=>{this.setState({popupView:true})}}>
+                Add
+            </button>
+            <button className='navButton'
+                    onClick={()=>{
+                      this.props.zoomIn(); //zoomIn
+                    }}>
+                +
+            </button>
+            <button className='navButton' style={{zIndex:999,width:'10%',height:'100%',margin:'0px',padding:'0px',borderRadius:'0px',fontSize:'3vh'}} 
+                    onClick={()=>{
+                      this.props.zoomOut();//zoom out
+                    }}>
+                -
+            </button>
+          </div> 
         </div>
-        <App_w zoomMultiplier={this.state.zoomMultiplier}/>
+        <App_w/>
       </div>
     );
   }
 }
-const Interface_w = applyConnectors(Interface,[framesDispatchConnector]);
+const Interface_w = applyConnectors(Interface,[framesDispatchConnector,zoomDispatchConnector]);
 
 root.render(
   <React.StrictMode>

@@ -73,6 +73,7 @@ interface overlayEffectsType{
   }
 }
 interface Payload{
+    zoomMode?:boolean|null,
     ids?:number[],
     id?:number|null,
     id1?:number,

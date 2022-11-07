@@ -7,7 +7,7 @@ $shadedColor:rgba(0, 0, 0, 0.366);
 $frameMinWidth: 150px;
 $frameMinHeight: 40px;
 $handleHeight: 25px;
-$handleBorderRadius: 10px;
+$baseBorderRadius: 10px;
 $frameBorderRadius: 10px;
 $embedAddedButtonHeight: 25px;
 $lineStrokeWidth: 2px;
@@ -15,13 +15,67 @@ $lineStrokeWidth: 2px;
 $framePadding: 8px;
 $editMarkerSize: 50px;
 
+$xs: 480px;
+$sm: 768px;
+$md: 1024px;
+$lg: 1200px;
+$xl: 1600px;
+
 @font-face{
     font-family:'Joystix';
     src: url('./joystix_monospace.ttf') format('truetype');
     font-style: normal;
     fornt-stretch: normal;
 }
+@mixin m-0{
+    margin:0px;
+}
+@mixin p-0{
+    padding:0px;
+}
+@mixin pm-0{
+    @include m-0;
+    @include p-0;
+}
+@mixin h-100{
+    height:100%;
+}
 
+.h-100{
+    @include h-100;
+}
+.m-0{
+    @include m-0;
+}
+.p-0{
+    @include p-0;
+}
+.pm-0{
+    @include pm-0;
+}
+@mixin btn($margin-x,$margin-y,$backgroundColor,$borderColor,$textColor,$borderRadius:""){
+    margin-left:$margin-x;
+    margin-right:$margin-x;
+    margin-top:$margin-y;
+    margin-bottom: $margin-y;
+    
+    background-color: $backgroundColor;
+    border-color: $borderColor;
+    color: $textColor;
+
+    user-select:none;
+    cursor: pointer;
+    outline:none;
+    border:none;
+    @if(unquote($borderRadius)!=""){
+        border-radius: unquote($borderRadius);
+    } @else {
+        border-radius: $borderRadius;
+    }
+}
+.holoButton{
+    @include btn(2px,0px,$backgroundColor,$secondaryColor,$textColor);
+}
 body{
     overflow:hidden;
 }
@@ -30,23 +84,47 @@ body{
     height:100%;
     width: 10%;
 }
+.logo{
+    font-family:'Joystix';
+    user-select:none;
+    color:$textColor;
+    top: 0px;
+    left: 0px;
+}
+.navBar{
+    @include pm-0;
+    position: absolute;
+    display: flex;
+    flex-direction: row;
+    z-index: 999;
+    height:50px;
+    width:100%;
+    font-size: 50px;
+    background-color: $primaryColor;
+    text-align: end;
+}
+.navButton{
+    @include btn(0px,0px,$backgroundColor,$secondaryColor,$textColor);
+    z-index:999;
+    width:'10%';
+    height:'100%';
+}
 .app{
     width: 100%;
     height: 100%;
     background-color: $backgroundColor;
     overflow:scroll;
 }
-.holoButton{
-    outline:none;
-    border:none;
-    cursor: pointer;
-    padding:0px;
-    margin:0px;
-    background-color:$backgroundColor;
-    color:$textColor;
+.pointer{
+    &.zoomIn{
+        cursor: zoom-in;
+    }
+    &.zoomOut{
+        cursor: zoom-out;
+    }
 }
 .frame{
-    border-radius:$frameBorderRadius;
+    border-radius:$baseBorderRadius;
     &.wrap{
       text-align:center;
       position: absolute;
@@ -64,21 +142,25 @@ body{
     &.handle{
         width:100%;
         height:$handleHeight;
-        border-radius: $handleBorderRadius;
+        border-radius: $baseBorderRadius;
         background-color:$secondaryColor;
         cursor:pointer;
     }
     &.text{
         max-width:$frameMinWidth;
         width:100%;
-        padding:0px;
+        padding-top:$framePadding;
+        padding-bottom:$framePadding;
         color:$textColor;
+        outline:none;
         word-break: break-word;
     }
     &.text-embed{
         width:100%;
-        padding:0px;
+        padding-top:$framePadding;
+        padding-bottom:$framePadding;
         color:$textColor;
+        outline:none;
         word-break: break-word;
     }
     &.embed{
@@ -87,6 +169,7 @@ body{
     }
 }
 .line,#svg-line{
+    position:absolute;
     stroke: $secondaryColor;
     stroke-width: $lineStrokeWidth;
     cursor: pointer;
@@ -101,23 +184,11 @@ body{
 .editBox{
     background-color:$shadedColor
 }
-.navBar{
-    position: absolute;
-    display: flex;
-    flex-direction: row;
-    z-index: 999;
-    height:50px;
-    width:100%;
-    background-color: $primaryColor;
-    padding:0px;
-    margin:0px;
-    text-align: end;
-}
+
 .popupModal{
+    @include pm-0;
     $clickboxZIndex:999;
     position:absolute;
-    padding:0px;
-    margin:0px;
     z-index:$clickboxZIndex;
     width:100vw;
     height:100vh;
@@ -133,7 +204,7 @@ body{
         background-color:$shadedColor;
     }
     >.modalWindow{
-        margin: 0;
+        @include m-0;
         position: absolute;
         top: 50%;
         left: 50%;
@@ -146,7 +217,6 @@ body{
         color:$textColor;
         >.modalForm{
             margin:10px;
-            pointer-events: none;
             z-index: 9999;
             display:flex;
             flex-direction: column;
@@ -196,7 +266,7 @@ body{
     frameBorderRadius: $frameBorderRadius;
 
     handleHeight: $handleHeight;
-    handleBorderRadius: $handleBorderRadius;
+    borderRadius: $baseBorderRadius;
     embedAddedButtonHeight: $embedAddedButtonHeight;
 
     lineStrokeWidth: $lineStrokeWidth;

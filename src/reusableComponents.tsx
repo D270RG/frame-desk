@@ -1,27 +1,4 @@
 import React from 'react';
-import { Style } from 'util';
-
-interface cButtonProps{
-  onClick?:any,
-  style?:React.CSSProperties,
-  children?:React.ReactNode,
-}
-class CButton extends React.Component<cButtonProps,{}>{
-  constructor(props:cButtonProps){
-    super(props);
-  }
-  render(){
-    return(
-      <button className='cButton' 
-              onClick={this.props.onClick}
-              style={
-                this.props.style
-              }>
-        {this.props.children}
-      </button>
-    );
-  }
-}
 
 interface popupProps {
         label:string,
@@ -54,5 +31,5 @@ interface popupProps {
       );
     }
   }
-  export {Popup,CButton};
-  export type {popupProps,cButtonProps};
+  export {Popup};
+  export type {popupProps};

@@ -6,7 +6,6 @@ function nextframeId(framesKeys:any) {
   const maxId = framesKeys.reduce((maxId:any, frameKey:any) => Math.max(frameKey, maxId), -1)
   return maxId + 1
 }
-var defaultSize:Position = {x:0,y:0};
 
 const graphInitialState = {
   frames:{
@@ -25,6 +24,10 @@ const graphInitialState = {
 }
 const frameEditInitialState = {
   editId:null as number|null
+}
+const zoomInitialState = {
+  zoomMultiplier:1.0,
+  zoomMode:null
 }
 const overlayEffectsInitialState = {
   effects:{
@@ -52,6 +55,22 @@ const overlayEffectsInitialState = {
       }
   }
 }
+const zoomSlice = createSlice({
+  name: 'zoom',
+  initialState: zoomInitialState,
+  reducers:{
+    zoomIn:(state, action:PayloadAction<Payload>)=>{
+      if(state.zoomMultiplier<1.5){
+        state.zoomMultiplier += 0.1;
+      }
+    },
+    zoomOut:(state, action:PayloadAction<Payload>)=>{
+      if(state.zoomMultiplier>0.5){
+        state.zoomMultiplier -= 0.1;
+      }
+    }
+  }
+});
 const overlayEffectsSlice = createSlice({
   name:'overlayEffects',
   initialState:overlayEffectsInitialState as any,
@@ -263,4 +282,4 @@ const frameEditSlice = createSlice({
     
 //   }
 // });
-export {graphSlice,frameEditSlice,overlayEffectsSlice};
+export {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice};
