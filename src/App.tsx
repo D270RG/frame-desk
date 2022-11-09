@@ -206,12 +206,10 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  renderText(){
   if(this.props.editId===this.props.id){
     return(
-      <div>
+      <div className='w-100 pm-0'>
         <ScalableTextarea className='pm-0 textarea' 
-                          style={{width:'100%',
+                          style={{
                                  fontSize:_fontSize,
-                                 padding:_framePadding,
-                                 borderRadius:_borderRadius
                                 }}
                           zoomMultiplier={this.props.zoomMultiplier} 
                           rows={3} 
@@ -222,7 +220,20 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
       </div>
     );
   } else {
-    return(this.props.text)
+    return(
+      <ScalableDiv passedRef={this.textRef}
+      zoomMultiplier={this.props.zoomMultiplier}
+      style={{
+              maxWidth:this.state.maxTextWidth,
+              fontSize:_fontSize,
+              marginBottom:_framePadding,
+              marginLeft:_framePadding,
+              marginRight:_framePadding
+             }}
+      className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
+        {this.props.text}
+      </ScalableDiv>
+      )
   }
  }
  loadEmbed(){
@@ -235,20 +246,22 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
     if(this.props.embedLink!==null && this.props.embedLink.maxSizes!==null){
       switch(this.props.embedLink.type as string){
         case 'image':{
-          var img = <div className='pm-0'>
+          var img = 
                       <ScalableImg ref={this.embedRef} 
                                    zoomMultiplier={this.props.zoomMultiplier}
                                    draggable={false}
                                    style={{
+                                          verticalAlign: 'bottom',
+                                          borderBottomLeftRadius:_borderRadius,
+                                          borderBottomRightRadius:_borderRadius,
                                           paddingTop:_framePadding*0.6,
                                           width:this.props.embedLink.maxSizes.x,
                                           height:this.props.embedLink.maxSizes.y,
-                                          borderRadius:_borderRadius*2
                                         }} 
                                    src={this.props.embedLink.url}
                                    onError={onError}>
                       </ScalableImg>           
-                    </div>
+                   
           if(this.props.editId===this.props.id){
             return(
               <div>
@@ -263,7 +276,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                     <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row-reverse'}}>
                       <ScalableButton className='holoButton h-100'
                                       style={{
-                                        borderRadius:_borderRadius,
+                                        borderRadius:0,
                                         fontSize:_fontSize
                                       }}
                                       zoomMultiplier={this.props.zoomMultiplier}
@@ -274,8 +287,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                     <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row'}}>
                       <ScalableButton className='holoButton h-100 m-0'
                                       style={{
-                                        borderTopLeftRadius:_borderRadius,
-                                        borderBottomLeftRadius:_borderRadius,
+                                        borderRadius:0,
                                         fontSize:30
                                       }}
                                       zoomMultiplier={this.props.zoomMultiplier}
@@ -286,8 +298,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                       </ScalableButton> 
                       <ScalableButton className='holoButton h-100 m-0'
                                       style={{
-                                        borderTopRightRadius:_borderRadius,
-                                        borderBottomRightRadius:_borderRadius,
+                                        borderRadius:0,
                                         fontSize:30
                                       }}
                                       zoomMultiplier={this.props.zoomMultiplier}
@@ -326,31 +337,23 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                      immutableStyles = {['left','top']}
                      style={{
                       borderRadius:_borderRadius,
-                      padding:_framePadding,
                       left:this.props.position.x,
                       top:this.props.position.y,
                      }} 
                      passedRef={this.wrapRef}>
               <ScalableDiv className='frame handle'
                            style={{
-                              marginBottom: _framePadding*0.7,
+                              marginBottom: _framePadding,
                               height:_handleHeight,
-                              borderRadius:_borderRadius,
+                              borderTopLeftRadius:_borderRadius,
+                              borderTopRightRadius:_borderRadius,
                             }} 
                             zoomMultiplier={this.props.zoomMultiplier}
                             passedRef={this.handleRef}>
 
               </ScalableDiv>
               <div ref={this.contentRef} style={{alignItems:'center',justifyContent:'center',textAlign:'center'}}>     
-                <ScalableDiv passedRef={this.textRef}
-                             zoomMultiplier={this.props.zoomMultiplier}
-                             style={{
-                                     maxWidth:this.state.maxTextWidth,
-                                     fontSize:_fontSize
-                                    }}
-                             className={this.props.embedLink? 'frame text-embed' : 'frame text'}>
-                  {this.renderText()}
-                </ScalableDiv>
+                {this.renderText()}
                 <div className='frame embed'>
                   {this.loadEmbed()}
                 </div>
@@ -856,7 +859,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   render(){
     return(
-      <div style={{position:'absolute',overflow:'scroll'}} 
+      <div style={{position:'absolute',overflow:'hidden'}} 
            className={this.props.scrollbarsVisibility? 'app' : 'app hideScrolls'}>
         {this.state.popupView && <Popup label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
         <Tracker_w frameMoved={this.props.frameMoved}/>

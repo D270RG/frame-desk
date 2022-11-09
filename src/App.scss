@@ -9,7 +9,7 @@ $textColor:rgb(166, 187, 224);
 $shadedColor:rgba(0, 0, 0, 0.366);
 $frameMinWidth: 150px;
 $frameMinHeight: 40px;
-$handleHeight: 25px;
+$handleHeight: 30px;
 $baseBorderRadius: 10px;
 $frameBorderRadius: 10px;
 $embedAddedButtonHeight: 25px;
@@ -65,10 +65,10 @@ $xl: 1600px;
   }
 /*----------------------------------*/
 @mixin m-0{
-    margin:0px;
+    margin: 0px!important;
 }
 @mixin p-0{
-    padding:0px;
+    padding: 0px!important;
 }
 @mixin pm-0{
     @include m-0;
@@ -77,9 +77,14 @@ $xl: 1600px;
 @mixin h-100{
     height:100%;
 }
-
+@mixin w-100{
+    width:100%;
+}
 .h-100{
     @include h-100;
+}
+.w-100{
+    @include w-100;
 }
 .m-0{
     @include m-0;
@@ -105,10 +110,6 @@ $xl: 1600px;
     user-select:none;
     cursor: pointer;
     outline:none;
-    &:focus{
-        position:relative;
-        outline:$outlineSize solid;
-    }
     border:none;
     @if(unquote($borderRadius)!=""){
         border-radius: unquote($borderRadius);
@@ -117,15 +118,11 @@ $xl: 1600px;
     }
 }
 .textarea{
-    box-sizing:border-box;
+    width:100%;
     resize:none;
     border:none;
     color: $textColor;
     background-color: $backgroundColor;
-    &:focus{
-        outline:$outlineSize solid;
-        position:relative;
-    }
     outline:none;
     width:100%;
 }
@@ -177,43 +174,41 @@ body{
     }
 }
 .frame{
-    border-radius:$baseBorderRadius;
     &.wrap{
       text-align:center;
       position: absolute;
       border:none;
-      padding: $framePadding;
+      outline:none;
       z-index:100;
       background:$primaryColor;
       align-items:center;
       user-select:none;
-        &.active{
-            color: $outlineColor;
-            outline: $outlineSize solid;
-        }
+      &.active{
+        outline:$outlineSize solid;
+        color:$textColor;
+      }
     }
     &.handle{
         width:100%;
-        height:$handleHeight;
-        border-radius: $baseBorderRadius;
         background-color:$secondaryColor;
         cursor:pointer;
     }
     &.text{
         max-width:$frameMinWidth;
-        width:100%;
+
         color:$textColor;
         outline:none;
         word-break: break-word;
     }
     &.text-embed{
-        width:100%;
+        @include pm-0;
         color:$textColor;
         outline:none;
         word-break: break-word;
     }
     &.embed{
         // max-width:400px;
+        min-height:100%;
         width:100%;
     }
 }
@@ -278,10 +273,6 @@ body{
                 color:$textColor;
                 margin:10px;
                 border-radius:10px;
-                &:focus{
-                    color: $outlineColor;
-                    outline: $outlineSize solid;
-                }
             }
             >.modalLabel{
             }
@@ -291,10 +282,6 @@ body{
                 color:$textColor;
                 background-color:$secondaryColor;
                 border:none;
-                &:focus{
-                    color: $outlineColor;
-                    outline: $outlineSize solid;
-                }
             }
     }
     }

@@ -60,14 +60,10 @@ const zoomSlice = createSlice({
   initialState: zoomInitialState,
   reducers:{
     zoomIn:(state, action:PayloadAction<Payload>)=>{
-      if(state.zoomMultiplier<1.5){
-        state.zoomMultiplier += 0.1;
-      }
+        state.zoomMultiplier += 0.0685*state.zoomMultiplier;
     },
     zoomOut:(state, action:PayloadAction<Payload>)=>{
-      if(state.zoomMultiplier>0.5){
-        state.zoomMultiplier -= 0.1;
-      }
+        state.zoomMultiplier -= 0.0735*state.zoomMultiplier;
     }
   }
 });
@@ -184,18 +180,11 @@ const graphSlice = createSlice({
     },
     framesZoom:(state, action:PayloadAction<Payload>)=>{
       state.frames!.keys.forEach((id:number)=>{
-        console.log(id,action.payload.multiplier);
-        var oldSize = {
-          ...state.frames!.data[id as number].size,
-          x: state.frames!.data[id as number].size.x,
-          y: state.frames!.data[id as number].size.y,
-        }
         var newSize = {
           ...state.frames!.data[id as number].size,
           x: state.frames!.data[id as number].size.x*(action.payload.multiplier as number),
           y: state.frames!.data[id as number].size.y*(action.payload.multiplier as number),
         }
-        console.log(oldSize,newSize);
         state.frames!.data[id as number].size = newSize;
       });
     },
