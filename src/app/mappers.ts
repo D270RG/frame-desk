@@ -44,6 +44,12 @@ function mapElementsState(state:RootState){
 }
 const elementsStateConnector = connect(mapElementsState);
 
+function mapSelectionState(state:RootState){
+  return{
+    selectedIds: state.graphReducer.selectedIds
+  }
+}
+const selectionStateConnector = connect(mapSelectionState);
 
 const mapEmbedDispatch = (dispatch:RootDispatch)=>({ 
     embedSetMaxSizes:(id:number,maxSizes:Position)=>{dispatch(graphSlice.actions.embedSetMaxSizes({id:id,maxSizes:maxSizes}))},
@@ -61,6 +67,10 @@ const mapFramesDispatch = (dispatch:RootDispatch)=>({
   framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
   frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
   frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
+  framesMoved:(ids:number[],positions:Position[])=>{dispatch(graphSlice.actions.framesMoved({ids:ids,positions:positions}))},
+  frameMovedRelative:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMovedRelative({id:id,position:position}))},
+  framesMovedRelative:(ids:number[],positions:Position[])=>{dispatch(graphSlice.actions.framesMovedRelative({ids:ids,positions:positions}))},
+  framesMovedRelativeSinglePosition:(ids:number[],position:Position)=>{dispatch(graphSlice.actions.framesMovedRelativeSinglePosition({ids:ids,position:position}))},
   framesZoom:(multiplier:number)=>{dispatch(graphSlice.actions.framesZoom({multiplier:multiplier}))}
 
 });
@@ -104,12 +114,26 @@ function mapEffectsDrag(state:RootState){
 }
 const dragEffectConnector = connect(mapEffectsDrag);
 
+function mapEffectsPseudodrag(state:RootState){
+  return{
+    effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect
+  }
+}
+const pseudodragEffectConnector = connect(mapEffectsPseudodrag);
+
 function mapEffectsAll(state:RootState){
   return{
-    effectsDataAll: state.overlayEffectsReducer.effects.data
+    effectsDataAll: state.overlayEffectsReducer.effects.data,
   }
 }
 const allEffectsConnector = connect(mapEffectsAll);
+
+function mapEffectMode(state:RootState){
+  return{
+    slowMode: state.overlayEffectsReducer.slowMode
+  }
+}
+const effectModeConnector = connect(mapEffectMode);
 
 const mapEffectsDispatch = (dispatch:RootDispatch) =>({
     effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
@@ -117,7 +141,10 @@ const mapEffectsDispatch = (dispatch:RootDispatch) =>({
     effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
     effectSetId:(type:OverlayEffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
     disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))},
-  
+    
+    pseudodragEffectSetDeltaStart:(delta:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetDeltaStart({delta:delta}))},
+    pseudodragEffectSetDeltaEnd:(delta:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetDeltaEnd({delta:delta}))},
+    pseudodragEffectSetSize:(size:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetSize({size:size}))},
     dragEffectAdded:(id:number,startPos:Position,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectAdded({id:id,startPos:startPos,endPos:endPos}))},
     dragEffectSetEndPos:(id:number,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetEndPos({id:id,endPos:endPos}))},
     dragEffectSetStartPos:(id:number,startPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetStartPos({id:id,endPos:startPos}))},
@@ -138,9 +165,11 @@ export {zoomStateConnector,zoomDispatchConnector,
 
         elementEditStateConnector,elementsStateConnector,
 
+        selectionStateConnector,
+
         elementEditDispatchConnector,embedDispatchConnector,framesDispatchConnector,linksDispatchConnector,selectionDispatchConnector,
         
         pseudolinkEffectConnector,selectionBoxEffectConnector,dragEffectConnector,
-        allEffectsConnector,effectsDispatchConnector,
+        allEffectsConnector,effectsDispatchConnector,effectModeConnector,pseudodragEffectConnector,
       
         applyConnectors};

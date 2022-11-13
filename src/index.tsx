@@ -47,6 +47,7 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean,scroll
     }
   }
   zoomMovement(mode:string){
+    console.log('zoomMovement');
     var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
     this.props.framesKeys.forEach((id:number)=>{
       var pos = this.props.framesData[id].position;
@@ -152,7 +153,6 @@ const Interface_w = applyConnectors(Interface,[zoomStateConnector,elementsStateC
 
 root.render(
   <React.StrictMode>
-    <div style={{position:'absolute',zIndex:9999,height:10,width:10,left:window.innerWidth/2,top:window.innerHeight/2,backgroundColor:'red'}}></div>
     <Provider store={store}>
       <Interface_w/>   
     </Provider>

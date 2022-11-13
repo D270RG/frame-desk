@@ -55,6 +55,11 @@ interface overlayEffectsType{
         startPos:Position,
         endPos:Position
       },
+      navigationEffect:{
+        isActive:boolean,
+        startPos:Position,
+        endPos:Position
+      },
       selectionBoxEffect:{
         isActive:boolean,
         startPos:Position,
@@ -91,18 +96,21 @@ interface Payload{
     position?:Position,
     size?:Position,
     link?:LinkType,
-    selectedIds?:number[]
+    selectedIds?:number[],
+    positions?:Position[]
 }
 interface OverlayEffectTypes{
-  types:'pseudolinkEffect'|'selectionBoxEffect'|'dragEffect'
+  types:'pseudolinkEffect'|'selectionBoxEffect'|'dragEffect'|'pseudodragEffect'
 }
 interface OverlayEffectPayload{
    type?:OverlayEffectTypes['types'],
    id?:number,
    isActive?:boolean,
    startPos?:Position,
-   endPos?:Position
+   endPos?:Position,
 
+   delta?:Position,
+   size?:Position,
    ids?:number[]
 }
 interface Action{

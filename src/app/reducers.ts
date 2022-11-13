@@ -6,6 +6,24 @@ function nextframeId(framesKeys:any) {
   const maxId = framesKeys.reduce((maxId:any, frameKey:any) => Math.max(frameKey, maxId), -1)
   return maxId + 1
 }
+function posOp(a:Position,operation:string,b:Position){
+  var newPos:Position = {x:0,y:0};
+  switch(operation){
+    case '+':{
+      newPos = {x:a.x+b.x,y:a.y+b.y};
+      break;
+    }
+    case '-':{
+      newPos = {x:a.x-b.x,y:a.y-b.y};
+    }
+  }
+  return(newPos);
+}
+function posShift(obj:FrameElement,shift:Position){
+  return({...obj,
+    position: posOp(obj.position,'+',shift)
+  });
+}
 
 const graphInitialState = {
   frames:{
@@ -30,11 +48,20 @@ const zoomInitialState = {
   zoomMode:null
 }
 const overlayEffectsInitialState = {
+  slowMode:true,
   effects:{
       data:{
         pseudolinkEffect:{
           id:-1,
           isActive:false,
+          startPos:{x:0,y:0},
+          endPos:{x:0,y:0}
+        },
+        pseudodragEffect:{
+          isActive:false,
+          deltaStart:{x:0,y:0},
+          deltaEnd:{x:0,y:0},
+          size:{x:0,y:0},
           startPos:{x:0,y:0},
           endPos:{x:0,y:0}
         },
@@ -87,6 +114,15 @@ const overlayEffectsSlice = createSlice({
     },
     effectSetId:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data[action.payload.type as string].id = action.payload.id;
+    },
+    pseudodragEffectSetSize:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['pseudodragEffect'].size = action.payload.size
+    },
+    pseudodragEffectSetDeltaStart:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['pseudodragEffect'].deltaStart = action.payload.delta
+    },
+    pseudodragEffectSetDeltaEnd:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['pseudodragEffect'].deltaEnd = action.payload.delta
     },
     dragEffectAdded:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data['dragEffect'].data[action.payload.id as number] = {
@@ -229,6 +265,33 @@ const graphSlice = createSlice({
         x: action.payload.position!.x,
         y: action.payload.position!.y
       }
+    },
+    framesMoved:(state, action:PayloadAction<Payload>)=>{
+      for(var i = 0;i<action.payload.ids!.length;i++){
+        state.frames!.data[action.payload.ids![i]].position = action.payload.positions![i];
+      }
+    },
+    frameMovedRelative:(state, action:PayloadAction<Payload>)=>{
+      state.frames!.data[action.payload.id as number].position = 
+      posShift(state.frames!.data[action.payload.id as number].position,
+              action.payload!.position!);
+    },
+    framesMovedRelative:(state, action:PayloadAction<Payload>)=>{
+      for(var i = 0;i<action.payload.ids!.length;i++){
+        state.frames!.data[action.payload.ids![i]].position = //action.payload.positions![i];
+
+        posShift(state.frames!.data[action.payload.ids![i]].position,
+                action.payload.positions![i]);
+      }
+    },
+    framesMovedRelativeSinglePosition:(state, action:PayloadAction<Payload>)=>{
+      console.log('shift',action.payload.position);
+      for(var i = 0;i<action.payload.ids!.length;i++){
+        state.frames!.data[action.payload.ids![i]].position = //action.payload.positions![i];
+
+        posOp(state.frames!.data[action.payload.ids![i]].position,'+',
+                action.payload.position as Position);
+        }
     },
     linkAdded:(state, action:PayloadAction<Payload>)=>{
       if(action.payload.link!.frame1>action.payload.link!.frame2){ 

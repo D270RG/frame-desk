@@ -11,10 +11,12 @@ import {
 
   elementEditStateConnector,elementsStateConnector,
 
+  selectionStateConnector,
+
   elementEditDispatchConnector,embedDispatchConnector,framesDispatchConnector,linksDispatchConnector,selectionDispatchConnector,
   
   pseudolinkEffectConnector,selectionBoxEffectConnector,dragEffectConnector,
-  allEffectsConnector,effectsDispatchConnector,
+  allEffectsConnector,effectsDispatchConnector,effectModeConnector,pseudodragEffectConnector,
 
   applyConnectors} from './app/mappers'
 
@@ -59,7 +61,7 @@ const ControlBox_w = applyConnectors(ControlBox,[embedDispatchConnector,zoomStat
 
 
 interface FrameProps extends ConnectedProps<typeof pseudolinkEffectConnector>,
-                             ConnectedProps<typeof selectionBoxEffectConnector>,
+                            //  ConnectedProps<typeof selectionBoxEffectConnector>,
                              ConnectedProps<typeof elementEditStateConnector>,
                              ConnectedProps<typeof zoomStateConnector>,
 
@@ -120,6 +122,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
   }
  }
  componentDidUpdate(prevProps:any){
+  console.log('update',this.props.id);
   var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
   if(this.props.size.y!=size.y || this.props.size.x!=size.x){
     //sync redux stored sizes with actual DOM sizes
@@ -133,6 +136,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
   }
  }
  shouldComponentUpdate(nextProps:any){
+  console.log('souldupdate',this.props.id);
   if(nextProps.editId!=this.props.id && this.props.editId==this.props.id){
     if(this.relabelRef.current.value.length!=0){
       this.props.frameRelabelled(this.props.id,this.relabelRef.current.value);
@@ -368,7 +372,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  }
 }
 const Frame_w = applyConnectors(Frame,[pseudolinkEffectConnector,
-                                      selectionBoxEffectConnector,
+                                      // selectionBoxEffectConnector,
                                       elementEditStateConnector,
                                       zoomStateConnector,
 
@@ -454,7 +458,9 @@ const Link_w = applyConnectors(Link,[framesDispatchConnector]);
 interface ClickboxProps extends ConnectedProps<typeof selectionBoxEffectConnector>,
                                 ConnectedProps<typeof elementEditStateConnector>,
                                 ConnectedProps<typeof zoomStateConnector>,
-                                ConnectedProps<typeof elementsStateConnector>,
+                                ConnectedProps<typeof selectionStateConnector>,
+                                ConnectedProps<typeof effectModeConnector>,
+                                ConnectedProps<typeof pseudodragEffectConnector>,
 
                                 ConnectedProps<typeof linksDispatchConnector>,
                                 ConnectedProps<typeof effectsDispatchConnector>,
@@ -473,37 +479,57 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     super(props);
   }
   clickboxHandlers={
-    onMouseDown:(e: any)=>{
-      if (e.button !== 0) return
-      if(this.props.editId!==null){
-        this.props.frameSetEdit(null);
-      } else {
-        this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
-          y: e.pageY});
-        this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
-          y: e.pageY});
-        this.props.effectSetActive('selectionBoxEffect',true);
-      }
+    onScroll:(e:any)=>{
+      console.log('scroll');
     },
+    onMouseDown:(e: any)=>{
+
+        // if (e.button === 1){
+        //   this.props.framesKeys.forEach((keyId:number)=>{
+        //     this.props.dragEffectAdded(keyId,
+        //       {x:e.pageX-this.props.framesData[keyId].position.x,y:e.pageY-this.props.framesData[keyId].position.y}, 
+        //       {x:e.pageX,y:e.pageY}
+        //     );
+        //   });
+        //   this.props.effectSetActive('dragEffect',true); 
+        // }
+        if (e.button === 0){
+          if(this.props.editId!==null){
+            this.props.frameSetEdit(null);
+          } else {
+            this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
+              y: e.pageY});
+            this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
+              y: e.pageY});
+            this.props.effectSetActive('selectionBoxEffect',true);
+          }
+        }
+      },
     onMouseUp:(e:any)=>{
       if(this.props.effectsDataSelectionBox.isActive){ //todo: unlink effects isActive from positions to fix redundant clickbox redraw
         this.props.areaSelectionCallback(this.props.effectsDataSelectionBox.startPos,this.props.effectsDataSelectionBox.endPos);
+      }
+      if(this.props.effectsDataPseudodrag.isActive){
+        console.log('mouseup',{x:e.pageX,y:e.pageY},'-',this.props.effectsDataPseudodrag.startPos,'=',posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataPseudodrag.startPos));
+        this.props.framesMovedRelativeSinglePosition(this.props.selectedIds,posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataPseudodrag.startPos));
       }
       this.props.disableAllEffects();
       this.props.dragEffectsClear();
     }
    }
    componentDidMount(){
+    (this.clickboxRef.current)!.addEventListener('scroll', this.clickboxHandlers.onScroll);
     (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
     document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
   }
   componentWillUnmount(){
+    (this.clickboxRef.current)!.removeEventListener('scroll', this.clickboxHandlers.onScroll);
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
     document.removeEventListener('mouseup', this.clickboxHandlers.onMouseUp);
   }
   render(){
     return(
-      <div className='clickbox' ref={this.clickboxRef} style={{zIndex:this.props.zIndex,height:'100vh',width:'100vw',position:'absolute'}}>
+      <div className={'clickbox'} ref={this.clickboxRef} style={{zIndex:this.props.zIndex,height:'100vh',width:'100vw',position:'absolute'}}>
 
       </div>
     );
@@ -512,7 +538,9 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
 const Clickbox_w = applyConnectors(Clickbox,[selectionBoxEffectConnector,
                                              elementEditStateConnector,
                                              zoomStateConnector,
-                                             elementsStateConnector,
+                                             selectionStateConnector,
+                                             effectModeConnector,
+                                             pseudodragEffectConnector,
 
                                              linksDispatchConnector,
                                              zoomDispatchConnector,
@@ -542,14 +570,16 @@ function posShift(obj:FrameElement,shift:Position){
 
 interface TrackerProps extends ConnectedProps<typeof allEffectsConnector>,
                                ConnectedProps<typeof effectsDispatchConnector>,
-                               ConnectedProps<typeof framesDispatchConnector>{
+                               ConnectedProps<typeof framesDispatchConnector>,
+                               ConnectedProps<typeof elementsStateConnector>,
+                               ConnectedProps<typeof zoomStateConnector>{
 
 }
 class Tracker extends React.Component<TrackerProps,{}>{
   constructor(props:any){
     super(props);
   }
-  onMouseMove=(e:any)=>{
+  track(e:any){
     if(this.props.effectsDataAll['pseudolinkEffect'].isActive){
       this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
         y: e.pageY});
@@ -558,11 +588,20 @@ class Tracker extends React.Component<TrackerProps,{}>{
       this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
         y: e.pageY});
     }
-    if(this.props.effectsDataAll['dragEffect'].isActive){
-      this.props.effectsDataAll['dragEffect'].keys.forEach((keyId:number)=>{
-        this.props.frameMoved(keyId,posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataAll.dragEffect.data[keyId].startPos));
-      });
+    if(this.props.effectsDataAll['pseudodragEffect'].isActive){
+      this.props.effectSetEnd('pseudodragEffect',{x: e.pageX,
+        y: e.pageY});
     }
+    if(this.props.effectsDataAll['dragEffect'].isActive){
+      var positions:Position[] = []; 
+      this.props.effectsDataAll['dragEffect'].keys.forEach((keyId:number)=>{
+        positions.push(posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataAll.dragEffect.data[keyId].startPos));
+      });
+      this.props.framesMoved(this.props.effectsDataAll['dragEffect'].keys,positions);
+    }
+  }
+  onMouseMove=(e:any)=>{
+    this.track(e);
   }
   componentDidMount(){
     document.addEventListener('mousemove',this.onMouseMove);
@@ -576,14 +615,18 @@ class Tracker extends React.Component<TrackerProps,{}>{
 }
 const Tracker_w = applyConnectors(Tracker,[allEffectsConnector, 
                                           effectsDispatchConnector,
-                                          framesDispatchConnector])
+                                          framesDispatchConnector,
+                                          elementsStateConnector,
+                                          zoomStateConnector])
 
 
 
 interface SelectionBoxProps extends ConnectedProps<typeof selectionBoxEffectConnector>,
                                     ConnectedProps<typeof zoomStateConnector>,
                                     ConnectedProps<typeof effectsDispatchConnector>{
-  zIndex:number
+  zIndex:number,
+  startPos:Position,
+  endPos:Position
 }
 class SelectionBox extends React.Component<SelectionBoxProps,{}>{
   createSelectionRectangle(startPosition:Position,endPosition:Position){
@@ -631,12 +674,10 @@ class SelectionBox extends React.Component<SelectionBoxProps,{}>{
   render() {
     return(
       <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
-            {this.props!.effectsDataSelectionBox!.isActive && 
-              this.createSelectionRectangle(this.props!.effectsDataSelectionBox.startPos as Position,
-                                       this.props!.effectsDataSelectionBox.endPos as Position
-                                       )
-            }
-          </svg>
+          {this.createSelectionRectangle(this.props!.startPos as Position,
+                                         this.props!.endPos as Position)
+          }
+      </svg>
     );
   }
 }
@@ -649,7 +690,10 @@ interface AppProps extends ConnectedProps<typeof elementsStateConnector>,
                            ConnectedProps<typeof pseudolinkEffectConnector>,
                            ConnectedProps<typeof elementEditStateConnector>,
                            ConnectedProps<typeof zoomStateConnector>,
-                           
+                           ConnectedProps<typeof effectModeConnector>,
+                           ConnectedProps<typeof selectionBoxEffectConnector>,
+                           ConnectedProps<typeof pseudodragEffectConnector>,
+  
                            ConnectedProps<typeof embedDispatchConnector>,
                            ConnectedProps<typeof framesDispatchConnector>,
                            ConnectedProps<typeof linksDispatchConnector>,
@@ -799,6 +843,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   //embed
   loadEmbed=(id:number,url:string)=>{
+    console.log('load embed');
     var img = new Image();
     img.src = url;
     img.onload = ()=>{
@@ -812,20 +857,60 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
       }
     }
   }
-  ///embed
+  //drag
   dragCallback=(fromId:number,eventX:number,eventY:number)=>{
-    if(this.props.selectedIds.includes(fromId)){
-      this.props.selectedIds.forEach((selectedId:number)=>{//bad naming
-        this.props.dragEffectAdded(selectedId,
-                  {x:eventX-this.props.framesData[selectedId].position.x,y:eventY-this.props.framesData[selectedId].position.y}, 
-                  {x:eventX,y:eventY});
-        });
+    if(this.props.slowMode){
+        if(this.props.selectedIds.length>0){
+          var max_x=0;
+          var max_y=0;
+          var min_x=999999;
+          var min_y=999999;
+  
+          this.props.selectedIds.forEach((selectedId:number)=>{
+            var topLeft = {
+                            x:this.props.framesData[selectedId].position.x,
+                            y:this.props.framesData[selectedId].position.y
+                          }
+            var bottomRight = {
+                                x:this.props.framesData[selectedId].position.x+this.props.framesData[selectedId].size.x,
+                                y:this.props.framesData[selectedId].position.y+this.props.framesData[selectedId].size.y
+                              }
+            if(bottomRight.x > max_x){max_x=bottomRight.x};
+            if(bottomRight.y > max_y){max_y=bottomRight.y};
+            if(topLeft.x < min_x){min_x=topLeft.x};
+            if(topLeft.y < min_y){min_y=topLeft.y};
+          });
+          var borderTopLeft = {x:min_x,y:min_y};
+          var borderBottomRight = {x:max_x,y:max_y};
+  
+          this.props.effectSetStart('pseudodragEffect',{x:eventX,y:eventY});
+          this.props.pseudodragEffectSetDeltaStart(posOp({x:eventX,y:eventY},'-',{x:borderTopLeft.x,y:borderTopLeft.y}));
+          this.props.pseudodragEffectSetDeltaEnd(posOp({x:borderBottomRight.x,y:borderBottomRight.y},'-',{x:eventX,y:eventY}));
+          this.props.pseudodragEffectSetSize({x:borderBottomRight.x-borderTopLeft.x,y:borderBottomRight.y-borderTopLeft.y});
+  
+         this.props.effectSetActive('pseudodragEffect',true); 
+        } else {
+          //single element drag
+            this.props.dragEffectAdded(fromId,
+              {x:eventX-this.props.framesData[fromId].position.x,y:eventY-this.props.framesData[fromId].position.y}, 
+              {x:eventX,y:eventY});
+            this.props.effectSetActive('dragEffect',true); 
+        }   
     } else {
-      this.props.dragEffectAdded(fromId,
-        {x:eventX-this.props.framesData[fromId].position.x,y:eventY-this.props.framesData[fromId].position.y}, 
-        {x:eventX,y:eventY});
+    //no slow mode
+      if(this.props.selectedIds.includes(fromId)){
+        this.props.selectedIds.forEach((selectedId:number)=>{
+          this.props.dragEffectAdded(selectedId,
+                    {x:eventX-this.props.framesData[selectedId].position.x,y:eventY-this.props.framesData[selectedId].position.y}, 
+                    {x:eventX,y:eventY});
+          });
+      } else {
+        this.props.dragEffectAdded(fromId,
+          {x:eventX-this.props.framesData[fromId].position.x,y:eventY-this.props.framesData[fromId].position.y}, 
+          {x:eventX,y:eventY});
+      }
+      this.props.effectSetActive('dragEffect',true); 
     }
-    this.props.effectSetActive('dragEffect',true); 
   }
   popupCallback=(isVisible:boolean,id:number)=>{
     this.setState({popupView:isVisible,popupId:id});
@@ -867,7 +952,15 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
                                areaDeselectionCallback={this.props.elementsDeselected}/>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}
-        <SelectionBox_w zIndex={999}/>
+        {this.props.effectsDataSelectionBox!.isActive && 
+          <SelectionBox_w zIndex={999} 
+                          startPos={this.props.effectsDataSelectionBox.startPos} 
+                          endPos={this.props.effectsDataSelectionBox.endPos}/>}
+                         
+        {this.props.effectsDataPseudodrag.isActive && 
+          <SelectionBox_w zIndex={999} 
+                          startPos={posOp(this.props.effectsDataPseudodrag.endPos,'-',this.props.effectsDataPseudodrag.deltaStart)} 
+                          endPos={posOp(this.props.effectsDataPseudodrag.endPos,'+',this.props.effectsDataPseudodrag.deltaEnd)}/>}
       </div>
     );
   };
@@ -876,6 +969,9 @@ const App_w = applyConnectors(App,[elementsStateConnector,
                                    pseudolinkEffectConnector,
                                    elementEditStateConnector,
                                    zoomStateConnector,
+                                   effectModeConnector,
+                                   selectionBoxEffectConnector,
+                                   pseudodragEffectConnector,
 
                                    zoomDispatchConnector,
                                    embedDispatchConnector,
