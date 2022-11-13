@@ -1,9 +1,10 @@
 import React, {MouseEvent} from 'react';
 import './App.scss';
 import styles from './App.scss';  
-
+import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
+import {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
 import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
-import {ConnectedProps} from 'react-redux'
+
 import {Popup} from './reusableComponents'
 import {ScalableButton,ScalableSvgLine,ScalableDiv,ScalableImg,ScalableTextarea} from './scalableComponents'
 import {
@@ -19,6 +20,7 @@ import {
   allEffectsConnector,effectsDispatchConnector,effectModeConnector,pseudodragEffectConnector,
 
   applyConnectors} from './app/mappers'
+import { RootDispatch, RootState } from './app/store';
 
 const _frameMinWidth = parseFloat(styles.frameMinWidth);
 const _frameMinHeight = parseFloat(styles.frameMinHeight);
@@ -30,8 +32,14 @@ const _borderRadius = parseFloat(styles.borderRadius);
 const _lineStrokeWidth = parseFloat(styles.lineStrokeWidth);
 const _fontSize = 20;
 
-interface ControlBoxProps extends ConnectedProps<typeof embedDispatchConnector>,
-                                  ConnectedProps<typeof zoomStateConnector>{
+
+function mapControlBoxState(state:RootState){
+  return{
+    zoomMultiplier: state.zoomReducer.zoomMultiplier
+  }
+}
+var controlBoxConnector = connect(mapControlBoxState);
+interface ControlBoxProps extends ConnectedProps<typeof controlBoxConnector>{
   id:number,
   embedPopupCallback: (arg0: boolean, arg1: any) => void,
 }
@@ -56,21 +64,40 @@ class ControlBox extends React.Component<ControlBoxProps,{}>{
     );
   }
 }
-const ControlBox_w = applyConnectors(ControlBox,[embedDispatchConnector,zoomStateConnector]);
+var ControlBox_w = controlBoxConnector(ControlBox);
 
 
+function mapFrameState(state:RootState){
+  return{
+    effectsDataPseudolink: state.overlayEffectsReducer.effects.data.pseudolinkEffect,
+    editId: state.frameEditReducer.editId,
+    zoomMultiplier: state.zoomReducer.zoomMultiplier
+  }
+}
+const mapFrameDispatch = (dispatch:RootDispatch) =>({
+  frameSetSize:(id:number,size:Position)=>{dispatch(graphSlice.actions.frameSetSize({id:id,size:size}))},
+  frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
+  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
 
-interface FrameProps extends ConnectedProps<typeof pseudolinkEffectConnector>,
-                            //  ConnectedProps<typeof selectionBoxEffectConnector>,
-                             ConnectedProps<typeof elementEditStateConnector>,
-                             ConnectedProps<typeof zoomStateConnector>,
+  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
+  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
+  effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
+  effectSetId:(type:OverlayEffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
 
-                             ConnectedProps<typeof effectsDispatchConnector>,
-                             ConnectedProps<typeof elementEditDispatchConnector>,
-                             ConnectedProps<typeof embedDispatchConnector>,
-                             ConnectedProps<typeof framesDispatchConnector>,
-                             ConnectedProps<typeof linksDispatchConnector>,
-                             ConnectedProps<typeof selectionDispatchConnector>
+  embedScaleMaxSize:(id:number,coordinate:string,scale:number)=>{dispatch(graphSlice.actions.embedScaleMaxSize({id:id,coordinate:coordinate,scale:scale}))},
+  embedAdded:(id:number,type:string,url:string,maxSizes:Position)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url,maxSizes:maxSizes}))},
+  embedRemoved:(id:number)=>{dispatch(graphSlice.actions.embedRemoved({id:id}))}
+});
+
+var frameConnector = connect(mapFrameState,mapFrameDispatch);
+interface FrameProps extends ConnectedProps<typeof frameConnector>
+
+                            //  ConnectedProps<typeof effectsDispatchConnector>,
+                            //  ConnectedProps<typeof elementEditDispatchConnector>,
+                            //  ConnectedProps<typeof embedDispatchConnector>,
+                            //  ConnectedProps<typeof framesDispatchConnector>,
+                            //  ConnectedProps<typeof linksDispatchConnector>,
+                            //  ConnectedProps<typeof selectionDispatchConnector>
 {                   
   id:number,
   text:string,
@@ -122,7 +149,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
   }
  }
  componentDidUpdate(prevProps:any){
-  console.log('update',this.props.id);
   var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
   if(this.props.size.y!=size.y || this.props.size.x!=size.x){
     //sync redux stored sizes with actual DOM sizes
@@ -136,7 +162,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
   }
  }
  shouldComponentUpdate(nextProps:any){
-  console.log('souldupdate',this.props.id);
   if(nextProps.editId!=this.props.id && this.props.editId==this.props.id){
     if(this.relabelRef.current.value.length!=0){
       this.props.frameRelabelled(this.props.id,this.relabelRef.current.value);
@@ -371,26 +396,21 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
     );
  }
 }
-const Frame_w = applyConnectors(Frame,[pseudolinkEffectConnector,
-                                      // selectionBoxEffectConnector,
-                                      elementEditStateConnector,
-                                      zoomStateConnector,
-
-                                      effectsDispatchConnector,
-                                      elementEditDispatchConnector,
-                                      embedDispatchConnector,
-                                      framesDispatchConnector,
-                                      linksDispatchConnector,
-                                      selectionDispatchConnector]);
+const Frame_w = frameConnector(Frame);
 
 
+function mapLineState(state:RootState){
+  return{
+    zoomMultiplier: state.zoomReducer.zoomMultiplier
+  }
+}
+const mapLineDispatch = (dispatch:RootDispatch) =>({
+  linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
+  linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))}
+});
 
-
-
-
-
-interface LineProps extends ConnectedProps<typeof linksDispatchConnector>,
-                            ConnectedProps<typeof zoomStateConnector>{
+var lineConnector = connect(mapLineState,mapLineDispatch);
+interface LineProps extends ConnectedProps<typeof lineConnector>{
   x1:number,
   y1:number,
   x2:number,
@@ -425,10 +445,15 @@ class Line extends React.Component<LineProps,{}>{
     );
   }
 }
-const Line_w = applyConnectors(Line,[linksDispatchConnector]);
+const Line_w = lineConnector(Line);
 
-
-interface LinkProps extends ConnectedProps<typeof framesDispatchConnector>{
+function mapLinkState(state:RootState){
+  return{
+    zoomMultiplier: state.zoomReducer.zoomMultiplier
+  }
+}
+var linkConnector = connect(mapLinkState);
+interface LinkProps extends ConnectedProps<typeof linkConnector>{
   zIndex:number,
   x1:number,
   y1:number,
@@ -447,28 +472,38 @@ class Link extends React.Component<LinkProps,{}>{
     return(
       <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
         <Line_w x1={this.props.x1} y1={this.props.y1} x2={this.props.x2} y2={this.props.y2} 
-        id1={this.props.id1} id2={this.props.id2} zoomMultiplier={this.props.zoomMultiplier}/>
+        id1={this.props.id1} id2={this.props.id2}/>
       </svg>
     );
   }
 }
-const Link_w = applyConnectors(Link,[framesDispatchConnector]);
+const Link_w = linkConnector(Link);
 
 
-interface ClickboxProps extends ConnectedProps<typeof selectionBoxEffectConnector>,
-                                ConnectedProps<typeof elementEditStateConnector>,
-                                ConnectedProps<typeof zoomStateConnector>,
-                                ConnectedProps<typeof selectionStateConnector>,
-                                ConnectedProps<typeof effectModeConnector>,
-                                ConnectedProps<typeof pseudodragEffectConnector>,
 
-                                ConnectedProps<typeof linksDispatchConnector>,
-                                ConnectedProps<typeof effectsDispatchConnector>,
-                                ConnectedProps<typeof elementEditDispatchConnector>,
-                                ConnectedProps<typeof zoomDispatchConnector>,
-                                ConnectedProps<typeof framesDispatchConnector>{
+function mapClickboxState(state:RootState){
+  return{
+    editId: state.frameEditReducer.editId,
+    selectedIds: state.graphReducer.selectedIds,
 
+    effectsDataSelectionBox: state.overlayEffectsReducer.effects.data.selectionBoxEffect,
+    effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect,
+  }
+}
+const mapClickboxDispatch = (dispatch:RootDispatch)=>({
+  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
+  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
+  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
+  effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
+
+  framesMovedRelativeSinglePosition:(ids:number[],position:Position)=>{dispatch(graphSlice.actions.framesMovedRelativeSinglePosition({ids:ids,position:position}))},
+  dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))},
+  disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))}
+});
+var clickboxConnector = connect(mapClickboxState,mapClickboxDispatch);
+interface ClickboxProps extends ConnectedProps<typeof clickboxConnector>{
   areaSelectionCallback: (arg0: any, arg1: any) => void,
+  areaDeselectionCallback: (arg0: any, arg1: any) => void,
   zIndex:number,
 
 }
@@ -510,7 +545,6 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
         this.props.areaSelectionCallback(this.props.effectsDataSelectionBox.startPos,this.props.effectsDataSelectionBox.endPos);
       }
       if(this.props.effectsDataPseudodrag.isActive){
-        console.log('mouseup',{x:e.pageX,y:e.pageY},'-',this.props.effectsDataPseudodrag.startPos,'=',posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataPseudodrag.startPos));
         this.props.framesMovedRelativeSinglePosition(this.props.selectedIds,posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataPseudodrag.startPos));
       }
       this.props.disableAllEffects();
@@ -535,18 +569,8 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     );
   }
 }
-const Clickbox_w = applyConnectors(Clickbox,[selectionBoxEffectConnector,
-                                             elementEditStateConnector,
-                                             zoomStateConnector,
-                                             selectionStateConnector,
-                                             effectModeConnector,
-                                             pseudodragEffectConnector,
+const Clickbox_w = clickboxConnector(Clickbox);
 
-                                             linksDispatchConnector,
-                                             zoomDispatchConnector,
-                                             framesDispatchConnector,
-                                             effectsDispatchConnector,
-                                             elementEditDispatchConnector]);
 
 
 function posOp(a:Position,operation:string,b:Position){
@@ -568,13 +592,22 @@ function posShift(obj:FrameElement,shift:Position){
   });
 }
 
-interface TrackerProps extends ConnectedProps<typeof allEffectsConnector>,
-                               ConnectedProps<typeof effectsDispatchConnector>,
-                               ConnectedProps<typeof framesDispatchConnector>,
-                               ConnectedProps<typeof elementsStateConnector>,
-                               ConnectedProps<typeof zoomStateConnector>{
 
+function mapTrackerState(state:RootState){
+  return{
+    effectsDataAll: state.overlayEffectsReducer.effects.data,
+    zoomMultiplier: state.zoomReducer.zoomMultiplier,
+  }
 }
+const mapTrackerDispatch = (dispatch:RootDispatch)=>({
+  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
+  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
+  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
+
+  framesMoved:(ids:number[],positions:Position[])=>{dispatch(graphSlice.actions.framesMoved({ids:ids,positions:positions}))}
+});
+var trackerConnector = connect(mapTrackerState,mapTrackerDispatch);
+interface TrackerProps extends ConnectedProps<typeof trackerConnector>{}
 class Tracker extends React.Component<TrackerProps,{}>{
   constructor(props:any){
     super(props);
@@ -613,17 +646,16 @@ class Tracker extends React.Component<TrackerProps,{}>{
     return(false);
   }
 }
-const Tracker_w = applyConnectors(Tracker,[allEffectsConnector, 
-                                          effectsDispatchConnector,
-                                          framesDispatchConnector,
-                                          elementsStateConnector,
-                                          zoomStateConnector])
+const Tracker_w = trackerConnector(Tracker);
 
 
-
-interface SelectionBoxProps extends ConnectedProps<typeof selectionBoxEffectConnector>,
-                                    ConnectedProps<typeof zoomStateConnector>,
-                                    ConnectedProps<typeof effectsDispatchConnector>{
+function selectionBoxState(state:RootState){
+  return{
+    zoomMultiplier: state.zoomReducer.zoomMultiplier,
+  }
+}
+var selectionBoxConnector = connect(selectionBoxState);
+interface SelectionBoxProps extends ConnectedProps<typeof selectionBoxConnector>{
   zIndex:number,
   startPos:Position,
   endPos:Position
@@ -681,26 +713,63 @@ class SelectionBox extends React.Component<SelectionBoxProps,{}>{
     );
   }
 }
-const SelectionBox_w = applyConnectors(SelectionBox,[selectionBoxEffectConnector,
-                                                     zoomStateConnector,
-                                                     effectsDispatchConnector]);
+const SelectionBox_w = selectionBoxConnector(SelectionBox);
 
+function mapAppState(state:RootState){
+  return{
+    framesData: state.graphReducer.frames!.data,
+    framesKeys: state.graphReducer.frames!.keys,
+    links: state.graphReducer.links,
+    selectedIds: state.graphReducer.selectedIds,
 
-interface AppProps extends ConnectedProps<typeof elementsStateConnector>,
-                           ConnectedProps<typeof pseudolinkEffectConnector>,
-                           ConnectedProps<typeof elementEditStateConnector>,
-                           ConnectedProps<typeof zoomStateConnector>,
-                           ConnectedProps<typeof effectModeConnector>,
-                           ConnectedProps<typeof selectionBoxEffectConnector>,
-                           ConnectedProps<typeof pseudodragEffectConnector>,
+    editId: state.frameEditReducer.editId,
+
+    effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect,
+    effectsDataSelectionBox: state.overlayEffectsReducer.effects.data.selectionBoxEffect,
+    effectsDataPseudolink: state.overlayEffectsReducer.effects.data.pseudolinkEffect,
+
+    slowMode: state.overlayEffectsReducer.slowMode
+  }
+}
+const mapAppDispatch = (dispatch:RootDispatch)=>({
+  frameAdded:(label:string,embedLink:EmbedData|null,position:Position,size?:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,embedLink:embedLink,position:position,size:size}))},
+  framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
+  linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
+  linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))},
   
-                           ConnectedProps<typeof embedDispatchConnector>,
-                           ConnectedProps<typeof framesDispatchConnector>,
-                           ConnectedProps<typeof linksDispatchConnector>,
-                           ConnectedProps<typeof selectionDispatchConnector>,
-                           ConnectedProps<typeof effectsDispatchConnector>,
-                           ConnectedProps<typeof elementEditDispatchConnector>,
-                           ConnectedProps<typeof zoomDispatchConnector>{
+  elementsSelected:(ids:number[])=>{dispatch(graphSlice.actions.elementsSelected({ids:ids}))},
+  elementsDeselected:(ids:number[])=>{dispatch(graphSlice.actions.elementsDeselected({ids:ids}))},
+  
+  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
+
+  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
+  effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
+  dragEffectAdded:(id:number,startPos:Position,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectAdded({id:id,startPos:startPos,endPos:endPos}))},
+    dragEffectSetEndPos:(id:number,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetEndPos({id:id,endPos:endPos}))},
+  pseudodragEffectSetDeltaStart:(delta:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetDeltaStart({delta:delta}))},
+  pseudodragEffectSetDeltaEnd:(delta:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetDeltaEnd({delta:delta}))},
+  pseudodragEffectSetSize:(size:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetSize({size:size}))},
+  
+  embedAdded:(id:number,type:string,url:string,maxSizes:Position)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url,maxSizes:maxSizes}))},
+});
+var appConnector = connect(mapAppState,mapAppDispatch);
+interface AppProps extends  ConnectedProps<typeof appConnector>
+                          //  ConnectedProps<typeof elementsStateConnector>,
+                          //  ConnectedProps<typeof pseudolinkEffectConnector>,
+                          //  ConnectedProps<typeof elementEditStateConnector>,
+                          //  ConnectedProps<typeof zoomStateConnector>,
+                          //  ConnectedProps<typeof effectModeConnector>,
+                          //  ConnectedProps<typeof selectionBoxEffectConnector>,
+                          //  ConnectedProps<typeof pseudodragEffectConnector>,
+  
+                          //  ConnectedProps<typeof embedDispatchConnector>,
+                          //  ConnectedProps<typeof framesDispatchConnector>,
+                          //  ConnectedProps<typeof linksDispatchConnector>,
+                          //  ConnectedProps<typeof selectionDispatchConnector>,
+                          //  ConnectedProps<typeof effectsDispatchConnector>,
+                          //  ConnectedProps<typeof elementEditDispatchConnector>,
+                          //  ConnectedProps<typeof zoomDispatchConnector>
+                           {
   scrollbarsVisibility:boolean
 }
 class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,popupId:number}>{
@@ -843,7 +912,6 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   //embed
   loadEmbed=(id:number,url:string)=>{
-    console.log('load embed');
     var img = new Image();
     img.src = url;
     img.onload = ()=>{
@@ -947,7 +1015,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
       <div style={{position:'absolute',overflow:'hidden'}} 
            className={this.props.scrollbarsVisibility? 'app' : 'app hideScrolls'}>
         {this.state.popupView && <Popup label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
-        <Tracker_w frameMoved={this.props.frameMoved}/>
+        <Tracker_w/>
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
                                areaDeselectionCallback={this.props.elementsDeselected}/>
         {this.renderFramesFromProps(2)}
@@ -965,20 +1033,6 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     );
   };
 }
-const App_w = applyConnectors(App,[elementsStateConnector,
-                                   pseudolinkEffectConnector,
-                                   elementEditStateConnector,
-                                   zoomStateConnector,
-                                   effectModeConnector,
-                                   selectionBoxEffectConnector,
-                                   pseudodragEffectConnector,
-
-                                   zoomDispatchConnector,
-                                   embedDispatchConnector,
-                                   framesDispatchConnector,
-                                   linksDispatchConnector,
-                                   selectionDispatchConnector,
-                                   effectsDispatchConnector,
-                                   elementEditDispatchConnector]);
+const App_w = appConnector(App);
     
 export default App_w;

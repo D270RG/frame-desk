@@ -5,12 +5,13 @@ import {ConnectedProps} from 'react-redux'
 import App_w from './App';
 import './index.css';
 
-import store from './app/store'
+import store, { RootDispatch, RootState } from './app/store'
 import { Provider } from 'react-redux';
-import { Position } from './app/interfaces';
+import { EmbedData, OverlayEffectTypes, Position } from './app/interfaces';
 import {elementsStateConnector,framesDispatchConnector,zoomDispatchConnector,applyConnectors, zoomStateConnector} from './app/mappers';
 import {connect} from 'react-redux';
 import {Popup} from './reusableComponents';
+import { frameEditSlice, graphSlice, overlayEffectsSlice, zoomSlice } from './app/reducers';
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
 function posOp(a:Position,operation:string,b:Position){
@@ -30,11 +31,24 @@ function posOp(a:Position,operation:string,b:Position){
   }
   return(newPos);
 }
-interface InterfaceProps extends ConnectedProps<typeof framesDispatchConnector>,
-                                 ConnectedProps<typeof elementsStateConnector>,
-                                 ConnectedProps<typeof zoomDispatchConnector>,
-                                 ConnectedProps<typeof zoomStateConnector>
-                                 {}
+
+function mapInterfaceState(state:RootState){
+  return{
+    framesData: state.graphReducer.frames!.data,
+    framesKeys: state.graphReducer.frames!.keys,
+
+    zoomMultiplier: state.zoomReducer.zoomMultiplier
+  }
+}
+const mapInterfaceDispatch = (dispatch:RootDispatch) =>({
+  frameAdded:(label:string,embedLink:EmbedData|null,position:Position,size?:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,embedLink:embedLink,position:position,size:size}))},
+  frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
+  zoomIn:()=>{dispatch(zoomSlice.actions.zoomIn({}))},
+  zoomOut:()=>{dispatch(zoomSlice.actions.zoomOut({}))}
+});
+
+var interfaceConnector = connect(mapInterfaceState,mapInterfaceDispatch);
+interface InterfaceProps extends ConnectedProps<typeof interfaceConnector>{}
 class Interface extends React.Component<InterfaceProps,{popupView:boolean,scrollbarsVisibility:boolean}>{
   constructor(props:InterfaceProps){
     super(props);
@@ -149,7 +163,7 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean,scroll
     );
   }
 }
-const Interface_w = applyConnectors(Interface,[zoomStateConnector,elementsStateConnector,framesDispatchConnector,zoomDispatchConnector]);
+const Interface_w = interfaceConnector(Interface);
 
 root.render(
   <React.StrictMode>
