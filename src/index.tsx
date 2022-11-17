@@ -114,7 +114,7 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean,scroll
         <div className='navBar'>
           <div style={{width:'50%',height:'100%',marginTop:'12px',marginLeft:'5px',display:'flex',flexDirection:'row'}}>
             <div className='logo' style={{display: 'inline-block',fontSize:'30px'}}>
-              FD
+              D
               </div>
           </div>
           <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row'}}>

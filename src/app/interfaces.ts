@@ -104,7 +104,7 @@ interface OverlayEffectTypes{
 }
 interface OverlayEffectPayload{
    type?:OverlayEffectTypes['types'],
-   id?:number,
+   id?:number|null,
    isActive?:boolean,
    startPos?:Position,
    endPos?:Position,

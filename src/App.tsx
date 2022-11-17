@@ -4,22 +4,9 @@ import styles from './App.scss';
 import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
 import {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
 import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
-
+import { throttle } from 'throttle-typescript';
 import {Popup} from './reusableComponents'
 import {ScalableButton,ScalableSvgLine,ScalableDiv,ScalableImg,ScalableTextarea} from './scalableComponents'
-import {
-  zoomStateConnector,zoomDispatchConnector,
-
-  elementEditStateConnector,elementsStateConnector,
-
-  selectionStateConnector,
-
-  elementEditDispatchConnector,embedDispatchConnector,framesDispatchConnector,linksDispatchConnector,selectionDispatchConnector,
-  
-  pseudolinkEffectConnector,selectionBoxEffectConnector,dragEffectConnector,
-  allEffectsConnector,effectsDispatchConnector,effectModeConnector,pseudodragEffectConnector,
-
-  applyConnectors} from './app/mappers'
 import { RootDispatch, RootState } from './app/store';
 
 const _frameMinWidth = parseFloat(styles.frameMinWidth);
@@ -69,7 +56,6 @@ var ControlBox_w = controlBoxConnector(ControlBox);
 
 function mapFrameState(state:RootState){
   return{
-    effectsDataPseudolink: state.overlayEffectsReducer.effects.data.pseudolinkEffect,
     editId: state.frameEditReducer.editId,
     zoomMultiplier: state.zoomReducer.zoomMultiplier
   }
@@ -110,7 +96,8 @@ interface FrameProps extends ConnectedProps<typeof frameConnector>
   isSelected:boolean,
   dragCallback:(fromId: number, eventX: number, eventY: number) => void,
   createLinkCallback:(fromId: number) => void,
-  popupCallback:(isVisible: boolean, id: number) => void
+  popupCallback:(isVisible: boolean, id: number) => void,
+  pseudolinkCallback:(id:number,eventPos:Position,state:boolean)=>void
 }
 
 class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
@@ -212,17 +199,18 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
     if(this.props.editId!==this.props.id){
-      this.props.effectSetStart('pseudolinkEffect',{x: e.pageX,
-        y: e.pageY});
-      this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
-        y: e.pageY});
-      this.props.effectSetId('pseudolinkEffect',this.props.id);
-      this.props.effectSetActive('pseudolinkEffect',true); //todo: 4 actions -> 1 action
+      // this.props.effectSetStart('pseudolinkEffect',{x: e.pageX,
+      //   y: e.pageY});
+      // this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
+      //   y: e.pageY});
+      // this.props.effectSetId('pseudolinkEffect',this.props.id);
+      this.props.pseudolinkCallback(this.props.id,{x: e.pageX,y:e.pageY},true);
+      // this.props.effectSetActive('pseudolinkEffect',true); //todo: 4 actions -> 1 action
     }
   },
   onMouseUpElement:(e:MouseEvent)=>{
     if (e.button !== 0) return;
-    if(this.props.effectsDataPseudolink.isActive) this.props.createLinkCallback(this.props.id);
+    this.props.createLinkCallback(this.props.id);
   }
  }
  wrapHandlers = {
@@ -349,16 +337,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
     }
  }
  render(){
-  var pseudolink:JSX.Element = 
-    <ScalableSvgLine x1={this.props.position.x+this.props.size.x/2} 
-                     y1={this.props.position.y+this.props.size.y/2} 
-                     x2={this.props.effectsDataPseudolink.endPos!.x} 
-                     y2={this.props.effectsDataPseudolink.endPos!.y} 
-                     id='svg-line'
-                     style={{
-                        strokeWidth:_lineStrokeWidth
-                     }}
-                     zoomMultiplier={this.props.zoomMultiplier}/>
     return(
       <div style={{zIndex:this.props.zIndex}}>
         <ScalableDiv className={this.props.isSelected ? 'frame wrap active' : 'frame wrap'} 
@@ -389,15 +367,57 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
               </div>
         {/* </div> */}
         </ScalableDiv>
-      <svg style={{position:'absolute',overflow:'visible'}}>
-          {this.props.effectsDataPseudolink.isActive&&(this.props.effectsDataPseudolink.id==this.props.id)&&pseudolink}
-      </svg>
      </div>
     );
  }
 }
 const Frame_w = frameConnector(Frame);
 
+function mapPseudolinkState(state:RootState){
+  return{
+    zoomMultiplier: state.zoomReducer.zoomMultiplier,
+    effectsDataPseudolink: state.overlayEffectsReducer.effects.data.pseudolinkEffect
+  }
+}
+const mapPseudolinkDispatch = (dispatch:RootDispatch)=>({
+  linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
+  pseudolinkEffectSetStartFrame:(id:number|null)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetStartFrame({id:id}))},
+  pseudolinkEffectSetEndFrame:(id:number|null)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetEndFrame({id:id}))},
+});
+const pseudolinkConnector = connect(mapPseudolinkState,mapPseudolinkDispatch);
+interface pseudolinkProps extends ConnectedProps<typeof pseudolinkConnector>{}
+class Pseudolink extends React.Component<pseudolinkProps,{}>{
+  componentDidUpdate(prevProps:pseudolinkProps){
+    if(this.props.effectsDataPseudolink.endFrame !== prevProps.effectsDataPseudolink.endFrame
+      && this.props.effectsDataPseudolink.endFrame!==undefined && this.props.effectsDataPseudolink.startFrame!==undefined
+      && this.props.effectsDataPseudolink.endFrame!==null && this.props.effectsDataPseudolink.startFrame!==null){
+        console.log('pass',this.props.effectsDataPseudolink.endFrame,this.props.effectsDataPseudolink.endFrame);
+        this.props.linkAdded(this.props.effectsDataPseudolink.startFrame,this.props.effectsDataPseudolink.endFrame);
+        this.props.pseudolinkEffectSetStartFrame(null);
+        this.props.pseudolinkEffectSetEndFrame(null);
+      }
+    return true;
+  }
+  render(){
+    return(
+      <svg style={{position:'absolute',overflow:'visible'}}>
+          {this.props.effectsDataPseudolink.isActive&&
+           <ScalableSvgLine 
+            x1={this.props.effectsDataPseudolink.startPos.x}
+            y1={this.props.effectsDataPseudolink.startPos.y}
+            x2={this.props.effectsDataPseudolink.endPos.x}
+            y2={this.props.effectsDataPseudolink.endPos.y}
+            id='svg-line'
+            style={{
+              strokeWidth:_lineStrokeWidth
+            }}
+            zoomMultiplier={this.props.zoomMultiplier}/>
+          }
+      </svg>
+    );
+  }
+}
+const Pseudolink_w = pseudolinkConnector(Pseudolink);
 
 function mapLineState(state:RootState){
   return{
@@ -488,6 +508,8 @@ function mapClickboxState(state:RootState){
 
     effectsDataSelectionBox: state.overlayEffectsReducer.effects.data.selectionBoxEffect,
     effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect,
+
+    zoomMultiplier: state.zoomReducer.zoomMultiplier
   }
 }
 const mapClickboxDispatch = (dispatch:RootDispatch)=>({
@@ -497,6 +519,7 @@ const mapClickboxDispatch = (dispatch:RootDispatch)=>({
   effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
 
   framesMovedRelativeSinglePosition:(ids:number[],position:Position)=>{dispatch(graphSlice.actions.framesMovedRelativeSinglePosition({ids:ids,position:position}))},
+  framesMovedRelativeSinglePositionAll:(position:Position)=>{dispatch(graphSlice.actions.framesMovedRelativeSinglePositionAll({position:position}))},
   dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))},
   disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))}
 });
@@ -515,19 +538,22 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   }
   clickboxHandlers={
     onScroll:(e:any)=>{
-      console.log('scroll');
+      if(!e.shiftKey){
+        if(e.deltaY<0){
+          this.props.framesMovedRelativeSinglePositionAll({x:0,y:30*this.props.zoomMultiplier});
+        } else {
+          this.props.framesMovedRelativeSinglePositionAll({x:0,y:-30*this.props.zoomMultiplier});
+        }
+      } else {
+        if(e.deltaY<0){
+          this.props.framesMovedRelativeSinglePositionAll({x:30*this.props.zoomMultiplier,y:0});
+        } else {
+          this.props.framesMovedRelativeSinglePositionAll({x:-30*this.props.zoomMultiplier,y:0});
+        }
+      }
+    
     },
     onMouseDown:(e: any)=>{
-
-        // if (e.button === 1){
-        //   this.props.framesKeys.forEach((keyId:number)=>{
-        //     this.props.dragEffectAdded(keyId,
-        //       {x:e.pageX-this.props.framesData[keyId].position.x,y:e.pageY-this.props.framesData[keyId].position.y}, 
-        //       {x:e.pageX,y:e.pageY}
-        //     );
-        //   });
-        //   this.props.effectSetActive('dragEffect',true); 
-        // }
         if (e.button === 0){
           if(this.props.editId!==null){
             this.props.frameSetEdit(null);
@@ -555,11 +581,12 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     (this.clickboxRef.current)!.addEventListener('scroll', this.clickboxHandlers.onScroll);
     (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
     document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
+    document.addEventListener('wheel', this.clickboxHandlers.onScroll);
   }
   componentWillUnmount(){
     (this.clickboxRef.current)!.removeEventListener('scroll', this.clickboxHandlers.onScroll);
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    document.removeEventListener('mouseup', this.clickboxHandlers.onMouseUp);
+    document.removeEventListener('wheel', this.clickboxHandlers.onScroll);
   }
   render(){
     return(
@@ -591,7 +618,6 @@ function posShift(obj:FrameElement,shift:Position){
     position: posOp(obj.position,'+',shift)
   });
 }
-
 
 function mapTrackerState(state:RootState){
   return{
@@ -637,10 +663,10 @@ class Tracker extends React.Component<TrackerProps,{}>{
     this.track(e);
   }
   componentDidMount(){
-    document.addEventListener('mousemove',this.onMouseMove);
+    document.addEventListener('mousemove',throttle(this.onMouseMove,10));
   }
   componentWillUnmount(){
-    document.removeEventListener('mousemove',this.onMouseMove);
+    document.removeEventListener('mousemove',throttle(this.onMouseMove,10));
   }
   render(){
     return(false);
@@ -652,13 +678,12 @@ const Tracker_w = trackerConnector(Tracker);
 function selectionBoxState(state:RootState){
   return{
     zoomMultiplier: state.zoomReducer.zoomMultiplier,
+    effectsDataSelectionBox: state.overlayEffectsReducer.effects.data.selectionBoxEffect
   }
 }
 var selectionBoxConnector = connect(selectionBoxState);
 interface SelectionBoxProps extends ConnectedProps<typeof selectionBoxConnector>{
-  zIndex:number,
-  startPos:Position,
-  endPos:Position
+  zIndex:number
 }
 class SelectionBox extends React.Component<SelectionBoxProps,{}>{
   createSelectionRectangle(startPosition:Position,endPosition:Position){
@@ -705,15 +730,89 @@ class SelectionBox extends React.Component<SelectionBoxProps,{}>{
   }
   render() {
     return(
-      <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
-          {this.createSelectionRectangle(this.props!.startPos as Position,
-                                         this.props!.endPos as Position)
-          }
-      </svg>
+      <div style={{position:'absolute',pointerEvents:'none'}}>
+        {this.props.effectsDataSelectionBox.isActive && 
+          <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
+              {this.createSelectionRectangle(this.props.effectsDataSelectionBox.startPos as Position,
+                                            this.props.effectsDataSelectionBox.endPos as Position)
+              }
+          </svg>
+        }
+      </div>
     );
   }
 }
 const SelectionBox_w = selectionBoxConnector(SelectionBox);
+
+function pseudodragBoxState(state:RootState){
+  return{
+    zoomMultiplier: state.zoomReducer.zoomMultiplier,
+    effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect
+  }
+}
+var pseudodragBoxConnector = connect(pseudodragBoxState);
+interface PseudodragBoxProps extends ConnectedProps<typeof pseudodragBoxConnector>{
+  zIndex:number
+}
+class PseudodragBox extends React.Component<PseudodragBoxProps,{}>{
+  createSelectionRectangle(startPosition:Position,endPosition:Position){
+    return(
+      <svg style={{position:'absolute',overflow:'visible'}}>
+        <ScalableSvgLine x1={startPosition.x} 
+                         y1={startPosition.y}
+                         x2={endPosition.x} 
+                         y2={startPosition.y}
+                         id='svg-selectionBox'
+                         style={{
+                          strokeWidth:_lineStrokeWidth
+                         }}
+                         zoomMultiplier={this.props.zoomMultiplier}/>
+        <ScalableSvgLine x1={endPosition.x} 
+                         y1={startPosition.y}
+                         x2={endPosition.x} 
+                         y2={endPosition.y}
+                         id='svg-selectionBox'
+                         style={{
+                          strokeWidth:_lineStrokeWidth
+                         }}
+                         zoomMultiplier={this.props.zoomMultiplier}/>
+        <ScalableSvgLine x1={endPosition.x} 
+                         y1={endPosition.y}
+                         x2={startPosition.x} 
+                         y2={endPosition.y}
+                         id='svg-selectionBox'
+                         style={{
+                          strokeWidth:_lineStrokeWidth
+                         }}
+                         zoomMultiplier={this.props.zoomMultiplier}/>
+        <ScalableSvgLine x1={startPosition.x} 
+                         y1={endPosition.y}
+                         x2={startPosition.x} 
+                         y2={startPosition.y}
+                         id='svg-selectionBox'
+                         style={{
+                          strokeWidth:_lineStrokeWidth
+                         }}
+                         zoomMultiplier={this.props.zoomMultiplier}/>
+      </svg>
+    );
+  }
+  render() {
+    return(
+      <div style={{position:'absolute',pointerEvents:'none'}}>
+        {this.props.effectsDataPseudodrag.isActive &&
+          <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
+              {this.createSelectionRectangle(posOp(this.props.effectsDataPseudodrag.endPos,'-',this.props.effectsDataPseudodrag.deltaStart),
+                                            posOp(this.props.effectsDataPseudodrag.endPos,'+',this.props.effectsDataPseudodrag.deltaEnd))
+              }
+          </svg>
+        }
+      </div>
+    );
+  }
+}
+const PseudodragBox_w = pseudodragBoxConnector(PseudodragBox);
+
 
 function mapAppState(state:RootState){
   return{
@@ -723,10 +822,6 @@ function mapAppState(state:RootState){
     selectedIds: state.graphReducer.selectedIds,
 
     editId: state.frameEditReducer.editId,
-
-    effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect,
-    effectsDataSelectionBox: state.overlayEffectsReducer.effects.data.selectionBoxEffect,
-    effectsDataPseudolink: state.overlayEffectsReducer.effects.data.pseudolinkEffect,
 
     slowMode: state.overlayEffectsReducer.slowMode
   }
@@ -743,33 +838,22 @@ const mapAppDispatch = (dispatch:RootDispatch)=>({
   frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
 
   effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
+  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
   effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
+  effectSetId:(type:OverlayEffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
+
   dragEffectAdded:(id:number,startPos:Position,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectAdded({id:id,startPos:startPos,endPos:endPos}))},
-    dragEffectSetEndPos:(id:number,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetEndPos({id:id,endPos:endPos}))},
+  dragEffectSetEndPos:(id:number,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetEndPos({id:id,endPos:endPos}))},
   pseudodragEffectSetDeltaStart:(delta:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetDeltaStart({delta:delta}))},
   pseudodragEffectSetDeltaEnd:(delta:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetDeltaEnd({delta:delta}))},
   pseudodragEffectSetSize:(size:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetSize({size:size}))},
-  
+  pseudolinkEffectSetStartFrame:(id:number)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetStartFrame({id:id}))},
+  pseudolinkEffectSetEndFrame:(id:number)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetEndFrame({id:id}))},
+
   embedAdded:(id:number,type:string,url:string,maxSizes:Position)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url,maxSizes:maxSizes}))},
 });
 var appConnector = connect(mapAppState,mapAppDispatch);
-interface AppProps extends  ConnectedProps<typeof appConnector>
-                          //  ConnectedProps<typeof elementsStateConnector>,
-                          //  ConnectedProps<typeof pseudolinkEffectConnector>,
-                          //  ConnectedProps<typeof elementEditStateConnector>,
-                          //  ConnectedProps<typeof zoomStateConnector>,
-                          //  ConnectedProps<typeof effectModeConnector>,
-                          //  ConnectedProps<typeof selectionBoxEffectConnector>,
-                          //  ConnectedProps<typeof pseudodragEffectConnector>,
-  
-                          //  ConnectedProps<typeof embedDispatchConnector>,
-                          //  ConnectedProps<typeof framesDispatchConnector>,
-                          //  ConnectedProps<typeof linksDispatchConnector>,
-                          //  ConnectedProps<typeof selectionDispatchConnector>,
-                          //  ConnectedProps<typeof effectsDispatchConnector>,
-                          //  ConnectedProps<typeof elementEditDispatchConnector>,
-                          //  ConnectedProps<typeof zoomDispatchConnector>
-                           {
+interface AppProps extends  ConnectedProps<typeof appConnector>{
   scrollbarsVisibility:boolean
 }
 class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,popupId:number}>{
@@ -908,7 +992,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     document.addEventListener('keydown',this.globalHandlers.onKeyDown);
   }
   createLinkCallback=(fromId:number)=>{
-    this.props.linkAdded(fromId,this.props.effectsDataPseudolink.id);
+    console.log('setEndFrame');
+    this.props.pseudolinkEffectSetEndFrame(fromId);
   }
   //embed
   loadEmbed=(id:number,url:string)=>{
@@ -952,6 +1037,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
           var borderBottomRight = {x:max_x,y:max_y};
   
           this.props.effectSetStart('pseudodragEffect',{x:eventX,y:eventY});
+          this.props.effectSetEnd('pseudodragEffect',{x:eventX,y: eventY});
           this.props.pseudodragEffectSetDeltaStart(posOp({x:eventX,y:eventY},'-',{x:borderTopLeft.x,y:borderTopLeft.y}));
           this.props.pseudodragEffectSetDeltaEnd(posOp({x:borderBottomRight.x,y:borderBottomRight.y},'-',{x:eventX,y:eventY}));
           this.props.pseudodragEffectSetSize({x:borderBottomRight.x-borderTopLeft.x,y:borderBottomRight.y-borderTopLeft.y});
@@ -980,6 +1066,20 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
       this.props.effectSetActive('dragEffect',true); 
     }
   }
+  pseudoLinkCallback=(id:number,eventPos:Position,state:boolean)=>{
+        // x1={this.props.position.x+this.props.size.x/2} 
+        // y1={this.props.position.y+this.props.size.y/2} 
+        // x2={this.props.effectsDataPseudolink.endPos!.x} 
+        // y2={this.props.effectsDataPseudolink.endPos!.y} 
+      this.props.effectSetStart('pseudolinkEffect',{x: eventPos.x,
+        y: eventPos.y});
+      this.props.effectSetEnd('pseudolinkEffect',{x: eventPos.x,
+        y: eventPos.y});
+      this.props.effectSetId('pseudolinkEffect',id);
+      this.props.pseudolinkEffectSetStartFrame(id);
+      console.log('setStartFrame');
+      this.props.effectSetActive('pseudolinkEffect',state); 
+  }
   popupCallback=(isVisible:boolean,id:number)=>{
     this.setState({popupView:isVisible,popupId:id});
   }
@@ -988,6 +1088,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     this.loadEmbed(this.state.popupId,value);
   }
   renderFramesFromProps(zIndex:number):JSX.Element[]{
+    console.log(this.props.framesKeys.length);
     var arr = this.props.framesKeys.map((id:number) =>{
       var isSelected = false;
       if(this.props.selectedIds.includes(id)){
@@ -1005,6 +1106,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
                dragCallback={this.dragCallback}
                createLinkCallback={this.createLinkCallback}
                popupCallback={this.popupCallback}
+               pseudolinkCallback={this.pseudoLinkCallback}
                />
       );
     });
@@ -1020,15 +1122,9 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
                                areaDeselectionCallback={this.props.elementsDeselected}/>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}
-        {this.props.effectsDataSelectionBox!.isActive && 
-          <SelectionBox_w zIndex={999} 
-                          startPos={this.props.effectsDataSelectionBox.startPos} 
-                          endPos={this.props.effectsDataSelectionBox.endPos}/>}
-                         
-        {this.props.effectsDataPseudodrag.isActive && 
-          <SelectionBox_w zIndex={999} 
-                          startPos={posOp(this.props.effectsDataPseudodrag.endPos,'-',this.props.effectsDataPseudodrag.deltaStart)} 
-                          endPos={posOp(this.props.effectsDataPseudodrag.endPos,'+',this.props.effectsDataPseudodrag.deltaEnd)}/>}
+        <Pseudolink_w/>
+        <SelectionBox_w zIndex={999}/>                        
+        <PseudodragBox_w zIndex={999}/>
       </div>
     );
   };

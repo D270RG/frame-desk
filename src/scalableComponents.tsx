@@ -62,6 +62,7 @@ declare module 'csstype' {
       var calculatedStyles = this.mapStyles(this.props.style);
       return(
         <div className={this.props.className} 
+                draggable={false}
                 id={this.props.id}
                 onClick={this.props.onClick}
                 ref={this.props.passedRef}

@@ -54,6 +54,8 @@ const overlayEffectsInitialState = {
         pseudolinkEffect:{
           id:-1,
           isActive:false,
+          startFrame:null,
+          endFrame:null,
           startPos:{x:0,y:0},
           endPos:{x:0,y:0}
         },
@@ -140,7 +142,14 @@ const overlayEffectsSlice = createSlice({
     dragEffectsClear:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data['dragEffect'].keys.length = 0;
       state.effects!.data['dragEffect'].data = {};
-    }
+    },
+
+    pseudolinkEffectSetStartFrame:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['pseudolinkEffect'].startFrame = action.payload.id as number|null
+    },
+    pseudolinkEffectSetEndFrame:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['pseudolinkEffect'].endFrame = action.payload.id as number|null
+    },
   }
 });
 const graphSlice = createSlice({
@@ -225,7 +234,8 @@ const graphSlice = createSlice({
       });
     },
     frameAdded:(state, action:PayloadAction<Payload>)=>{
-      var nextFrameId:number = nextframeId(state.frames!.keys as number[]);
+      if(state.frames.keys.length<100){
+        var nextFrameId:number = nextframeId(state.frames!.keys as number[]);
         if(action.payload.size != undefined){
           state.frames!.data[nextFrameId] = 
             {
@@ -246,6 +256,7 @@ const graphSlice = createSlice({
           state.frames!.keys.push(nextFrameId);
         };
         state.selectedIds!.push(nextFrameId);
+      }
     },
     framesRemoved:(state, action:PayloadAction<Payload>)=>{
       state.links = state.links!.filter((link:LinkType)=>
@@ -285,7 +296,6 @@ const graphSlice = createSlice({
       }
     },
     framesMovedRelativeSinglePosition:(state, action:PayloadAction<Payload>)=>{
-      console.log('shift',action.payload.position);
       for(var i = 0;i<action.payload.ids!.length;i++){
         state.frames!.data[action.payload.ids![i]].position = //action.payload.positions![i];
 
@@ -293,16 +303,26 @@ const graphSlice = createSlice({
                 action.payload.position as Position);
         }
     },
+    framesMovedRelativeSinglePositionAll:(state, action:PayloadAction<Payload>)=>{
+      for(var i = 0;i<state.frames.keys.length;i++){
+        state.frames!.data[state.frames.keys[i]].position = //action.payload.positions![i];
+
+        posOp(state.frames!.data[state.frames.keys[i]].position,'+',
+                action.payload.position as Position);
+        }
+    },
     linkAdded:(state, action:PayloadAction<Payload>)=>{
-      if(action.payload.link!.frame1>action.payload.link!.frame2){ 
-        var buffer = action.payload.link!.frame2;
-        action.payload.link!.frame2 = action.payload.link!.frame1;
-        action.payload.link!.frame1 = buffer;
-      } //swap values, frame1<frame2
-      var duplicates = state.links!.filter((link:LinkType)=>((link.frame1==action.payload.link!.frame1)&&(link.frame2==action.payload.link!.frame2)) 
-                                                || ((link.frame1==action.payload.link!.frame2)&&(link.frame2==action.payload.link!.frame1)));
-      if((duplicates.length==0)&&(action.payload.link!.frame1!==action.payload.link!.frame2)){
-          state.links!.push(action.payload.link as any);
+      if(action.payload.link!.frame1!==undefined && action.payload.link!.frame2!==undefined){
+        if(action.payload.link!.frame1>action.payload.link!.frame2){ 
+          var buffer = action.payload.link!.frame2;
+          action.payload.link!.frame2 = action.payload.link!.frame1;
+          action.payload.link!.frame1 = buffer;
+        } //swap values, frame1<frame2
+        var duplicates = state.links!.filter((link:LinkType)=>((link.frame1==action.payload.link!.frame1)&&(link.frame2==action.payload.link!.frame2)) 
+                                                  || ((link.frame1==action.payload.link!.frame2)&&(link.frame2==action.payload.link!.frame1)));
+        if((duplicates.length==0)&&(action.payload.link!.frame1!==action.payload.link!.frame2)){
+            state.links!.push(action.payload.link as any);
+        }
       }
     },
     linkRemoved:(state,action:PayloadAction<Payload>)=>{
