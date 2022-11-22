@@ -529,7 +529,7 @@ interface ClickboxProps extends ConnectedProps<typeof clickboxConnector>{
   areaSelectionCallback: (arg0: any, arg1: any) => void,
   areaDeselectionCallback: (arg0: any, arg1: any) => void,
   zIndex:number,
-
+  appRef:React.RefObject<any>
 }
 class Clickbox extends React.Component<ClickboxProps,{}>{
   selectionBoxRef = React.createRef<HTMLDivElement>();
@@ -537,39 +537,21 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   constructor(props:any){
     super(props);
   }
-  componentDidUpdate(){
-    if(this.props.listenerStateScroll){
-      document.addEventListener('wheel', this.clickboxHandlers.onScroll);
-    } else {
-      document.removeEventListener('wheel', this.clickboxHandlers.onScroll);
-    }
-  }
+  // componentDidUpdate(){
+  //   if(this.props.listenerStateScroll){
+  //     document.addEventListener('wheel', this.clickboxHandlers.onScroll);
+  //   } else {
+  //     document.removeEventListener('wheel', this.clickboxHandlers.onScroll);
+  //   }
+  // }
   clickboxHandlers={
-    onScroll:(e:any)=>{
-      if(!e.shiftKey){
-        if(e.deltaY<0){
-          this.props.framesMovedRelativeSinglePositionAll({x:0,y:30*this.props.zoomMultiplier});
-        } else {
-          this.props.framesMovedRelativeSinglePositionAll({x:0,y:-30*this.props.zoomMultiplier});
-        }
-      } else {
-        if(e.deltaY<0){
-          this.props.framesMovedRelativeSinglePositionAll({x:30*this.props.zoomMultiplier,y:0});
-        } else {
-          this.props.framesMovedRelativeSinglePositionAll({x:-30*this.props.zoomMultiplier,y:0});
-        }
-      }
-    
-    },
     onMouseDown:(e: any)=>{
         if (e.button === 0){
           if(this.props.editId!==null){
             this.props.frameSetEdit(null);
           } else {
-            this.props.effectSetStart('selectionBoxEffect',{x: e.pageX,
-              y: e.pageY});
-            this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
-              y: e.pageY});
+            this.props.effectSetStart('selectionBoxEffect',posOp({x:e.pageX,y:e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+            this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX,y: e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
             this.props.effectSetActive('selectionBoxEffect',true);
           }
         }
@@ -586,21 +568,21 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     }
    }
    componentDidMount(){
-    (this.clickboxRef.current)!.addEventListener('scroll', this.clickboxHandlers.onScroll);
+    // (this.clickboxRef.current)!.addEventListener('scroll', this.clickboxHandlers.onScroll);
     (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    document.addEventListener('wheel', this.clickboxHandlers.onScroll);
+    // document.addEventListener('wheel', this.clickboxHandlers.onScroll);
     document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
     
   }
   componentWillUnmount(){
-    (this.clickboxRef.current)!.removeEventListener('scroll', this.clickboxHandlers.onScroll);
+    // (this.clickboxRef.current)!.removeEventListener('scroll', this.clickboxHandlers.onScroll);
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
    
   }
   render(){
     return(
-      <div className={'clickbox'} ref={this.clickboxRef} style={{zIndex:this.props.zIndex,height:'100vh',width:'100vw',position:'absolute'}}>
-
+      <div className={'clickbox'} ref={this.clickboxRef} style={{zIndex:this.props.zIndex,position:'absolute'}}>
+        
       </div>
     );
   }
@@ -642,7 +624,9 @@ const mapTrackerDispatch = (dispatch:RootDispatch)=>({
   framesMoved:(ids:number[],positions:Position[])=>{dispatch(graphSlice.actions.framesMoved({ids:ids,positions:positions}))}
 });
 var trackerConnector = connect(mapTrackerState,mapTrackerDispatch);
-interface TrackerProps extends ConnectedProps<typeof trackerConnector>{}
+interface TrackerProps extends ConnectedProps<typeof trackerConnector>{
+  appRef:React.RefObject<any>
+}
 class Tracker extends React.Component<TrackerProps,{}>{
   constructor(props:any){
     super(props);
@@ -653,8 +637,7 @@ class Tracker extends React.Component<TrackerProps,{}>{
         y: e.pageY});
     }
     if(this.props.effectsDataAll['selectionBoxEffect'].isActive){
-      this.props.effectSetEnd('selectionBoxEffect',{x: e.pageX,
-        y: e.pageY});
+      this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX,y: e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
     }
     if(this.props.effectsDataAll['pseudodragEffect'].isActive){
       this.props.effectSetEnd('pseudodragEffect',{x: e.pageX,
@@ -868,7 +851,7 @@ interface AppProps extends  ConnectedProps<typeof appConnector>{
 class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,popupId:number}>{
   frameW = 150;
   frameH = 40;
-
+  appRef = React.createRef<any>();
   constructor(props:any){
     super(props);
     this.state = {frameBuffer:[] as FrameElement[],popupView:false,popupId:0}
@@ -1123,17 +1106,19 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   render(){
     return(
-      <div style={{position:'absolute',overflow:'hidden'}} 
+      <div ref={this.appRef} 
+           style={{position:'absolute',overflow:'scroll'}} 
            className={this.props.scrollbarsVisibility? 'app' : 'app hideScrolls'}>
         {this.state.popupView && <Popup readOnly={false} label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
-        <Tracker_w/>
-        <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
+        <Tracker_w appRef={this.appRef}/>
+        <Clickbox_w zIndex={1} appRef={this.appRef} areaSelectionCallback={this.selectElementsInArea.bind(this)}
                                areaDeselectionCallback={this.props.elementsDeselected}/>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}
         <Pseudolink_w/>
         <SelectionBox_w zIndex={999}/>                        
         <PseudodragBox_w zIndex={999}/>
+        
       </div>
     );
   };

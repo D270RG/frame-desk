@@ -146,7 +146,7 @@ body{
     position: absolute;
     display: flex;
     flex-direction: row;
-    z-index: 999;
+    z-index: 10000;
     height:50px;
     width:100%;
     font-size: 50px;
@@ -226,7 +226,11 @@ body{
 .editBox{
     background-color:$shadedColor
 }
-
+.clickbox{
+    width:1000vw;
+    height:1000vh;
+    overflow:hidden;
+}
 .popupModal{
     @include pm-0;
     $clickboxZIndex:999;
@@ -237,7 +241,7 @@ body{
     >.modalClickbox{
         pointer-events:'auto';
         position:absolute;
-        z-index: -1;
+        z-index: 0;
         left:0px;
         top:0px;
         height:100%;

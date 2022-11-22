@@ -102,7 +102,7 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
     var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
     this.props.framesKeys.forEach((id:number)=>{
       var pos = this.props.framesData[id].position;
-      var center = {x:window.innerWidth/2,y:window.innerHeight/2};
+      var center = {x:window.innerWidth/4,y:window.innerHeight/4};
       var delta = posOp(pos,'-',center);
       var change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
       if(delta.x<0 && delta.y<0){
