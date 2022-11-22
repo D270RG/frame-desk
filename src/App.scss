@@ -124,7 +124,6 @@ $xl: 1600px;
     color: $textColor;
     background-color: $backgroundColor;
     outline:none;
-    width:100%;
 }
 .holoButton{
     @include btn($framePadding,0px,$backgroundColor,$secondaryColor,$textColor);
@@ -245,6 +244,19 @@ body{
         width:100%;
         overflow:hidden;
         background-color:$shadedColor;
+    }
+    >.modalTextareaWindow{
+        @include m-0;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        -ms-transform: translateY(-50%) translateX(-50%);
+        transform: translateY(-50%) translateX(-50%);
+        width: 50%;
+        z-index: 9999;
+        border-radius:10px;
+        background-color:$primaryColor;
+        color:$textColor;
     }
     >.modalWindow{
         @include m-0;

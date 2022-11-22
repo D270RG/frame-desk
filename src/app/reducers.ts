@@ -1,6 +1,6 @@
-import { createSlice,configureStore  } from "@reduxjs/toolkit"
+import { createSlice,configureStore,current  } from "@reduxjs/toolkit"
 import type { PayloadAction} from '@reduxjs/toolkit'
-import type {LinkType,frameEditType,overlayEffectsType,Action,graphStateType,Payload,Position,OverlayEffectPayload,FrameElement,EmbedData} from './interfaces'
+import type {LinkType,frameEditType,overlayEffectsType,Action,graphStateType,Payload,Position,OverlayEffectPayload,FrameElement,EmbedData, ImportData, ImportActionPayload} from './interfaces'
 
 function nextframeId(framesKeys:any) {
   const maxId = framesKeys.reduce((maxId:any, frameKey:any) => Math.max(frameKey, maxId), -1)
@@ -24,7 +24,9 @@ function posShift(obj:FrameElement,shift:Position){
     position: posOp(obj.position,'+',shift)
   });
 }
-
+const listenersStateInitialState = {
+  scroll:true
+}
 const graphInitialState = {
   frames:{
     data:{
@@ -84,10 +86,22 @@ const overlayEffectsInitialState = {
       }
   }
 }
+const listenersStateSlice = createSlice({
+  name:'listenersState',
+  initialState:listenersStateInitialState,
+  reducers:{
+    setState:(state, action:PayloadAction<Payload>)=>{
+      state.scroll = action.payload.state as boolean
+    }
+  }
+});
 const zoomSlice = createSlice({
   name: 'zoom',
   initialState: zoomInitialState,
   reducers:{
+    setZoom:(state, action:PayloadAction<ImportActionPayload>)=>{
+      state.zoomMultiplier = action.payload.dataToImport.zoomMultiplier as number;
+    },
     zoomIn:(state, action:PayloadAction<Payload>)=>{
         state.zoomMultiplier += 0.0685*state.zoomMultiplier;
     },
@@ -156,6 +170,11 @@ const graphSlice = createSlice({
   name:'frameReducer',
   initialState:graphInitialState as any,
   reducers:{
+    importState:(state,action:PayloadAction<ImportActionPayload>)=>{
+      state.frames.data = action.payload.dataToImport.framesData;
+      state.frames.keys = action.payload.dataToImport.framesKeys;
+      state.links = action.payload.dataToImport.links;
+    },
     embedSetMaxSizes:(state,action:PayloadAction<Payload>)=>{
       state.frames!.data[action.payload.id as number].embedLink!.maxSizes = action.payload!.maxSizes as Position;
     },
@@ -354,4 +373,4 @@ const frameEditSlice = createSlice({
     
 //   }
 // });
-export {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice};
+export {listenersStateSlice,zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice};

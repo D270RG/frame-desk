@@ -2,7 +2,7 @@ import React, {MouseEvent} from 'react';
 import './App.scss';
 import styles from './App.scss';  
 import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
-import {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
+import {listenersStateSlice,zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
 import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
 import { throttle } from 'throttle-typescript';
 import {Popup} from './reusableComponents'
@@ -509,7 +509,8 @@ function mapClickboxState(state:RootState){
     effectsDataSelectionBox: state.overlayEffectsReducer.effects.data.selectionBoxEffect,
     effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect,
 
-    zoomMultiplier: state.zoomReducer.zoomMultiplier
+    zoomMultiplier: state.zoomReducer.zoomMultiplier,
+    listenerStateScroll: state.listenersStateReducer.scroll
   }
 }
 const mapClickboxDispatch = (dispatch:RootDispatch)=>({
@@ -535,6 +536,13 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   clickboxRef = React.createRef<HTMLDivElement>();
   constructor(props:any){
     super(props);
+  }
+  componentDidUpdate(){
+    if(this.props.listenerStateScroll){
+      document.addEventListener('wheel', this.clickboxHandlers.onScroll);
+    } else {
+      document.removeEventListener('wheel', this.clickboxHandlers.onScroll);
+    }
   }
   clickboxHandlers={
     onScroll:(e:any)=>{
@@ -580,13 +588,14 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
    componentDidMount(){
     (this.clickboxRef.current)!.addEventListener('scroll', this.clickboxHandlers.onScroll);
     (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
     document.addEventListener('wheel', this.clickboxHandlers.onScroll);
+    document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
+    
   }
   componentWillUnmount(){
     (this.clickboxRef.current)!.removeEventListener('scroll', this.clickboxHandlers.onScroll);
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    document.removeEventListener('wheel', this.clickboxHandlers.onScroll);
+   
   }
   render(){
     return(
@@ -1116,7 +1125,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     return(
       <div style={{position:'absolute',overflow:'hidden'}} 
            className={this.props.scrollbarsVisibility? 'app' : 'app hideScrolls'}>
-        {this.state.popupView && <Popup label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
+        {this.state.popupView && <Popup readOnly={false} label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
         <Tracker_w/>
         <Clickbox_w zIndex={1} areaSelectionCallback={this.selectElementsInArea.bind(this)}
                                areaDeselectionCallback={this.props.elementsDeselected}/>

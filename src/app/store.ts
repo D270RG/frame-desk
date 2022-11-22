@@ -1,7 +1,8 @@
 import { configureStore } from '@reduxjs/toolkit';
-import {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice} from './reducers';
+import {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice, listenersStateSlice} from './reducers';
 var store =  configureStore({
     reducer: {
+      listenersStateReducer: listenersStateSlice.reducer,
       zoomReducer: zoomSlice.reducer,
       graphReducer: graphSlice.reducer,
       frameEditReducer: frameEditSlice.reducer,

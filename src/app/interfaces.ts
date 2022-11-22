@@ -78,6 +78,7 @@ interface overlayEffectsType{
   }
 }
 interface Payload{
+    state?:boolean,
     zoomMode?:boolean|null,
     ids?:number[],
     id?:number|null,
@@ -97,7 +98,16 @@ interface Payload{
     size?:Position,
     link?:LinkType,
     selectedIds?:number[],
-    positions?:Position[]
+    positions?:Position[],
+}
+interface ImportData{
+    framesData:Map<number,FrameType>,
+    framesKeys:number[],
+    links:LinkType[],
+    zoomMultiplier:number
+}
+interface ImportActionPayload{
+    dataToImport:ImportData;
 }
 interface OverlayEffectTypes{
   types:'pseudolinkEffect'|'selectionBoxEffect'|'dragEffect'|'pseudodragEffect'
@@ -117,4 +127,6 @@ interface Action{
   type:string,
   payload:Payload
 }
-export type {frameEditType,overlayEffectsType,Payload,graphStateType,Action,LinkType,Position,FrameType,FrameElement,OverlayEffectPayload,EffectType,OverlayEffectTypes,EmbedData}
+export type {frameEditType,overlayEffectsType,Payload,graphStateType,
+             Action,LinkType,Position,FrameType,FrameElement,OverlayEffectPayload,
+             EffectType,OverlayEffectTypes,EmbedData,ImportData,ImportActionPayload}

@@ -1,17 +1,16 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import ReactDOM from 'react-dom';
-import {ConnectedProps} from 'react-redux'
+import {ConnectedProps,batch} from 'react-redux'
 import App_w from './App';
 import './index.css';
 
 import store, { RootDispatch, RootState } from './app/store'
 import { Provider } from 'react-redux';
-import { EmbedData, OverlayEffectTypes, Position } from './app/interfaces';
-import {elementsStateConnector,framesDispatchConnector,zoomDispatchConnector,applyConnectors, zoomStateConnector} from './app/mappers';
+import { EmbedData, FrameType, ImportData, LinkType, OverlayEffectTypes, Position } from './app/interfaces';
 import {connect} from 'react-redux';
-import {Popup} from './reusableComponents';
-import { frameEditSlice, graphSlice, overlayEffectsSlice, zoomSlice } from './app/reducers';
+import {Popup, TextareaPopup} from './reusableComponents';
+import { frameEditSlice, graphSlice, listenersStateSlice, overlayEffectsSlice, zoomSlice } from './app/reducers';
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
 function posOp(a:Position,operation:string,b:Position){
@@ -36,6 +35,7 @@ function mapInterfaceState(state:RootState){
   return{
     framesData: state.graphReducer.frames!.data,
     framesKeys: state.graphReducer.frames!.keys,
+    links: state.graphReducer.links,
 
     zoomMultiplier: state.zoomReducer.zoomMultiplier
   }
@@ -44,32 +44,66 @@ const mapInterfaceDispatch = (dispatch:RootDispatch) =>({
   frameAdded:(label:string,embedLink:EmbedData|null,position:Position,size?:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,embedLink:embedLink,position:position,size:size}))},
   frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
   zoomIn:()=>{dispatch(zoomSlice.actions.zoomIn({}))},
-  zoomOut:()=>{dispatch(zoomSlice.actions.zoomOut({}))}
+  zoomOut:()=>{dispatch(zoomSlice.actions.zoomOut({}))},
+  setScrollState:(state:boolean)=>{dispatch(listenersStateSlice.actions.setState({state:state}))},
+  importState:(dataToImport:ImportData)=>{  
+      batch(()=>{
+        dispatch(graphSlice.actions.importState({dataToImport:dataToImport}));
+        dispatch(zoomSlice.actions.setZoom({dataToImport:dataToImport}));
+      }); 
+  },
 });
 
 var interfaceConnector = connect(mapInterfaceState,mapInterfaceDispatch);
 interface InterfaceProps extends ConnectedProps<typeof interfaceConnector>{}
-class Interface extends React.Component<InterfaceProps,{popupView:boolean,scrollbarsVisibility:boolean}>{
+class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolean,
+                                                        exportPopupView:boolean,
+                                                        importPopupView:boolean,
+                                                        scrollbarsVisibility:boolean}>{
   constructor(props:InterfaceProps){
     super(props);
-    this.state = {popupView:false,scrollbarsVisibility:true}
+    this.state = {frameAddPopupView:false,
+                  importPopupView:false,
+                  exportPopupView:false,
+                  scrollbarsVisibility:true}
   }
-  popupExternalAction=(isVisible:boolean,value:string)=>{
-    this.setState({popupView:isVisible});
+  frameAddPopupExternalAction=(isVisible:boolean,value:string)=>{
+    this.setState({frameAddPopupView:isVisible});
     if(value!==''){
       this.props.frameAdded(value,null,{x:500,y:500});
     }
   }
+  importPopupExternalAction=(isVisible:boolean,value:string)=>{
+    this.props.setScrollState(true); 
+    console.log(value);
+    if(value!==''){
+      var dataToImport = JSON.parse(value);
+      console.log(dataToImport);
+      const isImportData = (data:any):data is ImportData => true;
+      if(isImportData(dataToImport)){
+        console.log('isData');
+        this.props.importState(dataToImport as ImportData);
+      }
+    }
+    this.setState({importPopupView:isVisible});
+  }
+  exportPopupExternalAction=(isVisible:boolean,value:string)=>{
+    this.props.setScrollState(true); 
+    if(value !== ''){
+      navigator.clipboard.writeText(value).then(function() {
+        console.log('Async: Copying to clipboard was successful!');
+      }, function(err) {
+        console.error('Async: Could not copy text: ', err);
+      });
+    }
+    this.setState({exportPopupView:isVisible});
+  }
   zoomMovement(mode:string){
-    console.log('zoomMovement');
     var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
     this.props.framesKeys.forEach((id:number)=>{
       var pos = this.props.framesData[id].position;
       var center = {x:window.innerWidth/2,y:window.innerHeight/2};
       var delta = posOp(pos,'-',center);
-      var distance = Math.sqrt(Math.pow(delta.x,2)+Math.pow(delta.y,2));
-      var angle = Math.atan(delta.y/distance);
-      // var change = {x:Math.cos(angle)*distance*coef,y:Math.sin(angle)*distance*coef}
       var change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
       if(delta.x<0 && delta.y<0){
         change = posOp(change,'*',{x:-1,y:-1});
@@ -83,18 +117,6 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean,scroll
       if(delta.x>0 && delta.y<0){
         change = posOp(change,'*',{x:1,y:-1});
       }
-      // if(delta.x<0 && delta.y<0){
-      //   change = posOp(change,'*',{x:-1,y:1});
-      // }
-      // if(delta.x>0 && delta.y>0){
-      //   change = posOp(change,'*',{x:1,y:1});
-      // }
-      // if(delta.x<0 && delta.y>0){
-      //   change = posOp(change,'*',{x:-1,y:1});
-      // }
-      // if(delta.x>0 && delta.y<0){
-      //   //default
-      // }
       switch(mode){
         case 'in':{
           this.props.frameMoved(id,posOp(pos,'+',change));
@@ -110,7 +132,16 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean,scroll
   render(){
     return(
       <div>
-        {this.state.popupView && <Popup label='Enter label' externalStateAction={this.popupExternalAction}/>}
+        {this.state.frameAddPopupView && <Popup readOnly={false} label='Enter label' externalStateAction={this.frameAddPopupExternalAction}/>}
+        {this.state.importPopupView && <TextareaPopup readOnly={false}  label='Import' externalStateAction={this.importPopupExternalAction}/>}
+        {this.state.exportPopupView && <TextareaPopup initValue={
+                                                JSON.stringify(
+                                                  {framesData:this.props.framesData,
+                                                  framesKeys:this.props.framesKeys,
+                                                  links:this.props.links,
+                                                  zoomMultiplier:this.props.zoomMultiplier
+                                                  }, null, 4)
+                                              } readOnly={true} label='Export' externalStateAction={this.exportPopupExternalAction}/>}
         <div className='navBar'>
           <div style={{width:'50%',height:'100%',marginTop:'12px',marginLeft:'5px',display:'flex',flexDirection:'row'}}>
             <div className='logo' style={{display: 'inline-block',fontSize:'30px'}}>
@@ -122,7 +153,7 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean,scroll
                     style={{
                       fontSize:'20px'
                     }} 
-                    onClick={()=>{this.setState({popupView:true})}}>
+                    onClick={()=>{this.setState({frameAddPopupView:true})}}>
                 <i className="bi bi-plus-square"></i>
             </button>
             <button className='navButton'
@@ -153,8 +184,16 @@ class Interface extends React.Component<InterfaceProps,{popupView:boolean,scroll
                     style={{
                       fontSize:'20px'
                     }} 
-                    onClick={()=>{this.setState({scrollbarsVisibility:!this.state.scrollbarsVisibility})}}>
-                <i className="bi bi-layout-sidebar-inset-reverse"></i>
+                    onClick={()=>{this.setState({importPopupView:true})}}>
+                Import
+            </button>
+            <button className='navButton'
+                    style={{
+                      fontSize:'20px'
+                    }} 
+                    onClick={()=>{this.props.setScrollState(false); 
+                                  this.setState({exportPopupView:true})}}>
+                Export
             </button>
           </div> 
         </div>
