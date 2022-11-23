@@ -99,6 +99,7 @@ interface Payload{
     link?:LinkType,
     selectedIds?:number[],
     positions?:Position[],
+    lastClickPos?:Position
 }
 interface ImportData{
     framesData:Map<number,FrameType>,

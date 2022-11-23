@@ -8,6 +8,7 @@ import { throttle } from 'throttle-typescript';
 import {Popup} from './reusableComponents'
 import {ScalableButton,ScalableSvgLine,ScalableDiv,ScalableImg,ScalableTextarea} from './scalableComponents'
 import { RootDispatch, RootState } from './app/store';
+import {posOp,posShift} from './PosUtils'
 
 const _frameMinWidth = parseFloat(styles.frameMinWidth);
 const _frameMinHeight = parseFloat(styles.frameMinHeight);
@@ -76,15 +77,7 @@ const mapFrameDispatch = (dispatch:RootDispatch) =>({
 });
 
 var frameConnector = connect(mapFrameState,mapFrameDispatch);
-interface FrameProps extends ConnectedProps<typeof frameConnector>
-
-                            //  ConnectedProps<typeof effectsDispatchConnector>,
-                            //  ConnectedProps<typeof elementEditDispatchConnector>,
-                            //  ConnectedProps<typeof embedDispatchConnector>,
-                            //  ConnectedProps<typeof framesDispatchConnector>,
-                            //  ConnectedProps<typeof linksDispatchConnector>,
-                            //  ConnectedProps<typeof selectionDispatchConnector>
-{                   
+interface FrameProps extends ConnectedProps<typeof frameConnector>{                   
   id:number,
   text:string,
   embedLink:EmbedData,
@@ -391,7 +384,6 @@ class Pseudolink extends React.Component<pseudolinkProps,{}>{
     if(this.props.effectsDataPseudolink.endFrame !== prevProps.effectsDataPseudolink.endFrame
       && this.props.effectsDataPseudolink.endFrame!==undefined && this.props.effectsDataPseudolink.startFrame!==undefined
       && this.props.effectsDataPseudolink.endFrame!==null && this.props.effectsDataPseudolink.startFrame!==null){
-        console.log('pass',this.props.effectsDataPseudolink.endFrame,this.props.effectsDataPseudolink.endFrame);
         this.props.linkAdded(this.props.effectsDataPseudolink.startFrame,this.props.effectsDataPseudolink.endFrame);
         this.props.pseudolinkEffectSetStartFrame(null);
         this.props.pseudolinkEffectSetEndFrame(null);
@@ -503,6 +495,9 @@ const Link_w = linkConnector(Link);
 
 function mapClickboxState(state:RootState){
   return{
+    framesData: state.graphReducer.frames.data,
+    framesKeys: state.graphReducer.frames.keys,
+
     editId: state.frameEditReducer.editId,
     selectedIds: state.graphReducer.selectedIds,
 
@@ -510,6 +505,8 @@ function mapClickboxState(state:RootState){
     effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect,
 
     zoomMultiplier: state.zoomReducer.zoomMultiplier,
+    zoomMode: state.zoomReducer.zoomMode,
+    lastClickPos: state.zoomReducer.lastClickPos,
     listenerStateScroll: state.listenersStateReducer.scroll
   }
 }
@@ -518,11 +515,18 @@ const mapClickboxDispatch = (dispatch:RootDispatch)=>({
   effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
   effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
   effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
-
+  
+  frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
   framesMovedRelativeSinglePosition:(ids:number[],position:Position)=>{dispatch(graphSlice.actions.framesMovedRelativeSinglePosition({ids:ids,position:position}))},
   framesMovedRelativeSinglePositionAll:(position:Position)=>{dispatch(graphSlice.actions.framesMovedRelativeSinglePositionAll({position:position}))},
+  
   dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))},
-  disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))}
+  disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))},
+  
+  setZoomMode:(zoomMode:null|boolean)=>{dispatch(zoomSlice.actions.setZoomMode({zoomMode:zoomMode}))},
+  setLastClickPos:(lastClickPos:Position)=>{dispatch(zoomSlice.actions.setPos({lastClickPos:lastClickPos}))},
+  zoomIn:()=>{dispatch(zoomSlice.actions.zoomIn({}))},
+  zoomOut:()=>{dispatch(zoomSlice.actions.zoomOut({}))},
 });
 var clickboxConnector = connect(mapClickboxState,mapClickboxDispatch);
 interface ClickboxProps extends ConnectedProps<typeof clickboxConnector>{
@@ -537,22 +541,60 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   constructor(props:any){
     super(props);
   }
-  // componentDidUpdate(){
-  //   if(this.props.listenerStateScroll){
-  //     document.addEventListener('wheel', this.clickboxHandlers.onScroll);
-  //   } else {
-  //     document.removeEventListener('wheel', this.clickboxHandlers.onScroll);
-  //   }
-  // }
+  zoomMovement(mode:string,zoomPos:Position){
+    var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
+    this.props.framesKeys.forEach((id:number)=>{
+      var pos = this.props.framesData[id].position;
+      var center = zoomPos;
+      var delta = posOp(pos,'-',center);
+      var change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
+      if(delta.x<0 && delta.y<0){
+        change = posOp(change,'*',{x:-1,y:-1});
+      }
+      if(delta.x>0 && delta.y>0){
+       //default
+      }
+      if(delta.x<0 && delta.y>0){
+        change = posOp(change,'*',{x:-1,y:1});
+      }
+      if(delta.x>0 && delta.y<0){
+        change = posOp(change,'*',{x:1,y:-1});
+      }
+      switch(mode){
+        case 'in':{
+          console.log(Math.abs(delta.x)*coef);
+          this.props.frameMoved(id,posOp(pos,'+',change));
+          break;
+        }
+        case 'out':{
+          this.props.frameMoved(id,posOp(pos,'-',change));
+          break;
+        }
+      }
+    })
+  }
   clickboxHandlers={
     onMouseDown:(e: any)=>{
         if (e.button === 0){
           if(this.props.editId!==null){
             this.props.frameSetEdit(null);
           } else {
-            this.props.effectSetStart('selectionBoxEffect',posOp({x:e.pageX,y:e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
-            this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX,y: e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
-            this.props.effectSetActive('selectionBoxEffect',true);
+            if(this.props.zoomMode===null){
+              this.props.effectSetStart('selectionBoxEffect',posOp({x:e.pageX,y:e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+              this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX,y: e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+              this.props.effectSetActive('selectionBoxEffect',true);
+            } else {
+              //true - zoomIn, false - zoomOut
+              this.props.setLastClickPos({x:e.clientX,y:e.clientY});
+              if(this.props.zoomMode){
+                //TODO - batch
+                this.zoomMovement('in',{x:e.clientX,y:e.clientY});
+                this.props.zoomIn();
+              } else {
+                this.zoomMovement('out',{x:e.clientX,y:e.clientY});
+                this.props.zoomOut();
+              }
+            }
           }
         }
       },
@@ -582,7 +624,20 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   render(){
     return(
       <div className={'clickbox'} ref={this.clickboxRef} style={{zIndex:this.props.zIndex,position:'absolute'}}>
-        
+        <div style={{width:'100%',height:'100%',position:'absolute',top:50-this.props.lastClickPos.y*(this.props.zoomMultiplier-1),left:-this.props.lastClickPos.x*(this.props.zoomMultiplier-1)}}>
+          <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="smallGrid" width={8*this.props.zoomMultiplier} height={8*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
+                <path d={"M "+8*this.props.zoomMultiplier+" 0 L 0 0 0 "+8*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="0.5"/>
+              </pattern>
+              <pattern id="grid"  width={80*this.props.zoomMultiplier} height={80*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
+                <rect width={80*this.props.zoomMultiplier} height={80*this.props.zoomMultiplier} fill="url(#smallGrid)"/>
+                <path d={"M "+80*this.props.zoomMultiplier+" 0 L 0 0 0 "+80*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="1"/>
+              </pattern>g
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+          </svg>
+        </div>
       </div>
     );
   }
@@ -591,24 +646,7 @@ const Clickbox_w = clickboxConnector(Clickbox);
 
 
 
-function posOp(a:Position,operation:string,b:Position){
-  var newPos:Position = {x:0,y:0};
-  switch(operation){
-    case '+':{
-      newPos = {x:a.x+b.x,y:a.y+b.y};
-      break;
-    }
-    case '-':{
-      newPos = {x:a.x-b.x,y:a.y-b.y};
-    }
-  }
-  return(newPos);
-}
-function posShift(obj:FrameElement,shift:Position){
-  return({...obj,
-    position: posOp(obj.position,'+',shift)
-  });
-}
+
 
 function mapTrackerState(state:RootState){
   return{
@@ -815,7 +853,8 @@ function mapAppState(state:RootState){
 
     editId: state.frameEditReducer.editId,
 
-    slowMode: state.overlayEffectsReducer.slowMode
+    slowMode: state.overlayEffectsReducer.slowMode,
+    zoomMode: state.zoomReducer.zoomMode
   }
 }
 const mapAppDispatch = (dispatch:RootDispatch)=>({
@@ -843,6 +882,7 @@ const mapAppDispatch = (dispatch:RootDispatch)=>({
   pseudolinkEffectSetEndFrame:(id:number)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetEndFrame({id:id}))},
 
   embedAdded:(id:number,type:string,url:string,maxSizes:Position)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url,maxSizes:maxSizes}))},
+  setZoomMode:(zoomMode:null|boolean)=>{dispatch(zoomSlice.actions.setZoomMode({zoomMode:zoomMode}))}
 });
 var appConnector = connect(mapAppState,mapAppDispatch);
 interface AppProps extends  ConnectedProps<typeof appConnector>{
@@ -966,6 +1006,9 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
         if(this.props.editId!==null){
           this.props.frameSetEdit(null);
         }
+        if(this.props.zoomMode!==null){
+          this.props.setZoomMode(null);
+        }
       }
       this.globalHandlers.onCombinationPressed(e);
     }
@@ -984,7 +1027,6 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     document.addEventListener('keydown',this.globalHandlers.onKeyDown);
   }
   createLinkCallback=(fromId:number)=>{
-    console.log('setEndFrame');
     this.props.pseudolinkEffectSetEndFrame(fromId);
   }
   //embed
@@ -1069,7 +1111,6 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
         y: eventPos.y});
       this.props.effectSetId('pseudolinkEffect',id);
       this.props.pseudolinkEffectSetStartFrame(id);
-      console.log('setStartFrame');
       this.props.effectSetActive('pseudolinkEffect',state); 
   }
   popupCallback=(isVisible:boolean,id:number)=>{
@@ -1080,7 +1121,6 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     this.loadEmbed(this.state.popupId,value);
   }
   renderFramesFromProps(zIndex:number):JSX.Element[]{
-    console.log(this.props.framesKeys.length);
     var arr = this.props.framesKeys.map((id:number) =>{
       var isSelected = false;
       if(this.props.selectedIds.includes(id)){

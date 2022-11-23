@@ -47,7 +47,11 @@ const frameEditInitialState = {
 }
 const zoomInitialState = {
   zoomMultiplier:1.0,
-  zoomMode:null
+  lastClickPos:{
+    x:0,
+    y:0
+  },
+  zoomMode:null as boolean|null
 }
 const overlayEffectsInitialState = {
   slowMode:true,
@@ -107,6 +111,12 @@ const zoomSlice = createSlice({
     },
     zoomOut:(state, action:PayloadAction<Payload>)=>{
         state.zoomMultiplier -= 0.0735*state.zoomMultiplier;
+    },
+    setZoomMode:(state, action:PayloadAction<Payload>)=>{
+        state.zoomMode = action.payload.zoomMode as boolean|null
+    },
+    setPos:(state, action:PayloadAction<Payload>)=>{
+        state.lastClickPos= action.payload.lastClickPos as Position
     }
   }
 });

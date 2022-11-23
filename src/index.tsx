@@ -7,30 +7,12 @@ import './index.css';
 
 import store, { RootDispatch, RootState } from './app/store'
 import { Provider } from 'react-redux';
-import { EmbedData, FrameType, ImportData, LinkType, OverlayEffectTypes, Position } from './app/interfaces';
+import { EmbedData, FrameElement, FrameType, ImportData, LinkType, OverlayEffectTypes, Position } from './app/interfaces';
 import {connect} from 'react-redux';
 import {Popup, TextareaPopup} from './reusableComponents';
 import { frameEditSlice, graphSlice, listenersStateSlice, overlayEffectsSlice, zoomSlice } from './app/reducers';
 
 const root = createRoot(document.getElementById('root') as HTMLElement);
-function posOp(a:Position,operation:string,b:Position){
-  var newPos:Position = {x:0,y:0};
-  switch(operation){
-    case '+':{
-      newPos = {x:a.x+b.x,y:a.y+b.y};
-      break;
-    }
-    case '-':{
-      newPos = {x:a.x-b.x,y:a.y-b.y};
-      break;
-    }
-    case '*':{
-      newPos = {x:a.x*b.x,y:a.y*b.y};
-    }
-  }
-  return(newPos);
-}
-
 function mapInterfaceState(state:RootState){
   return{
     framesData: state.graphReducer.frames!.data,
@@ -52,6 +34,9 @@ const mapInterfaceDispatch = (dispatch:RootDispatch) =>({
         dispatch(zoomSlice.actions.setZoom({dataToImport:dataToImport}));
       }); 
   },
+  setZoomMode:(zoomMode:boolean|null)=>{
+    dispatch(zoomSlice.actions.setZoomMode({zoomMode:zoomMode}));
+  }
 });
 
 var interfaceConnector = connect(mapInterfaceState,mapInterfaceDispatch);
@@ -98,37 +83,6 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
     }
     this.setState({exportPopupView:isVisible});
   }
-  zoomMovement(mode:string){
-    var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
-    this.props.framesKeys.forEach((id:number)=>{
-      var pos = this.props.framesData[id].position;
-      var center = {x:window.innerWidth/4,y:window.innerHeight/4};
-      var delta = posOp(pos,'-',center);
-      var change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
-      if(delta.x<0 && delta.y<0){
-        change = posOp(change,'*',{x:-1,y:-1});
-      }
-      if(delta.x>0 && delta.y>0){
-       //default
-      }
-      if(delta.x<0 && delta.y>0){
-        change = posOp(change,'*',{x:-1,y:1});
-      }
-      if(delta.x>0 && delta.y<0){
-        change = posOp(change,'*',{x:1,y:-1});
-      }
-      switch(mode){
-        case 'in':{
-          this.props.frameMoved(id,posOp(pos,'+',change));
-          break;
-        };
-        case 'out':{
-          this.props.frameMoved(id,posOp(pos,'-',change));
-          break;
-        }
-      }
-    })
-  }
   render(){
     return(
       <div>
@@ -160,10 +114,11 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     style={{
                       fontSize:'25px'
                     }}
-                    onClick={()=>{
+                    onClick={(e)=>{
                       if(this.props.zoomMultiplier<1.5){
-                        this.zoomMovement('in');
-                        this.props.zoomIn();
+                        this.props.setZoomMode(true);
+                        // this.zoomMovement('in',{x:e.clientX,y:e.clientY});
+                        // this.props.zoomIn();
                       }
                     }}>
                 <i className="bi bi-zoom-in"></i>
@@ -174,8 +129,9 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     }} 
                     onClick={()=>{
                       if(this.props.zoomMultiplier>0.5){
-                        this.zoomMovement('out');
-                        this.props.zoomOut();//zoom out
+                        this.props.setZoomMode(false);
+                        // this.zoomMovement('out');
+                        // this.props.zoomOut();
                       }
                     }}>
                 <i className="bi bi-zoom-out"></i>
