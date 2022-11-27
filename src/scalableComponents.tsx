@@ -73,7 +73,10 @@ declare module 'csstype' {
     }
   }
 
-  interface scalableButtonProps {}
+  interface scalableButtonProps {
+    ariaLabel?:string,
+    title?:string
+  }
   class ScalableButton extends ScalableComponent<scalableButtonProps,{}>{
     constructor(props:scalableContainerProps&scalableButtonProps){
       super(props);
@@ -85,6 +88,8 @@ declare module 'csstype' {
                 id={this.props.id}
                 onClick={this.props.onClick}
                 ref={this.props.passedRef}
+                aria-label={this.props.ariaLabel}
+                title={this.props.title}
                 style={calculatedStyles}>
           {this.props.children}
         </button>

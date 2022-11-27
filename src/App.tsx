@@ -45,6 +45,8 @@ class ControlBox extends React.Component<ControlBoxProps,{}>{
                             borderRadius:_borderRadius,
                             fontSize:_fontSize
                           }}
+                          ariaLabel='Add image'
+                          title='Add image'
                           zoomMultiplier={this.props.zoomMultiplier}
                           onClick={()=>{this.props.embedPopupCallback(true,this.props.id)}}>
             <i className="bi bi-paperclip"></i>
@@ -266,8 +268,8 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                                    draggable={false}
                                    style={{
                                           verticalAlign: 'bottom',
-                                          borderBottomLeftRadius:_borderRadius,
-                                          borderBottomRightRadius:_borderRadius,
+                                          // borderBottomLeftRadius:_borderRadius,
+                                          // borderBottomRightRadius:_borderRadius,
                                           paddingTop:_framePadding*0.6,
                                           width:this.props.embedLink.maxSizes.x,
                                           height:this.props.embedLink.maxSizes.y,
@@ -293,6 +295,8 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                                         borderRadius:0,
                                         fontSize:_fontSize
                                       }}
+                                      ariaLabel='Remove image'
+                                      title='Remove image'
                                       zoomMultiplier={this.props.zoomMultiplier}
                                       onClick={()=>{deleteEmbed()}}>
                         <i className="bi bi-trash"></i>
@@ -304,6 +308,8 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                                         borderRadius:0,
                                         fontSize:30
                                       }}
+                                      ariaLabel='Zoom image out'
+                                      title='Zoom image out'
                                       zoomMultiplier={this.props.zoomMultiplier}
                                       onClick={(e: any)=>{
                                         this.props.embedScaleMaxSize(this.props.id,'xy',0.9);
@@ -315,6 +321,8 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                                         borderRadius:0,
                                         fontSize:30
                                       }}
+                                      ariaLabel='Zoom image in'
+                                      title='Zoom image in'
                                       zoomMultiplier={this.props.zoomMultiplier}
                                       onClick={(e: any)=>{
                                         this.props.embedScaleMaxSize(this.props.id,'xy',1.1);
@@ -640,11 +648,11 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="smallGrid" width={10*this.props.zoomMultiplier} height={10*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
-                <path d={"M "+10*this.props.zoomMultiplier+" 0 L 0 0 0 "+10*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="0.5"/>
+                <path d={"M "+10*this.props.zoomMultiplier+" 0 L 0 0 0 "+10*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="0.25"/>
               </pattern>
               <pattern id="grid"  width={100*this.props.zoomMultiplier} height={100*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
                 <rect width={100*this.props.zoomMultiplier} height={100*this.props.zoomMultiplier} fill="url(#smallGrid)"/>
-                <path d={"M "+100*this.props.zoomMultiplier+" 0 L 0 0 0 "+100*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="1"/>
+                <path d={"M "+100*this.props.zoomMultiplier+" 0 L 0 0 0 "+100*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="0.5"/>
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#grid)" />

@@ -106,6 +106,8 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     style={{
                       fontSize:'20px'
                     }} 
+                    title='Add frame'
+                    aria-label='Add frame'
                     onClick={()=>{this.setState({frameAddPopupView:true})}}>
                 <i className="bi bi-plus-square"></i>
             </button>
@@ -113,6 +115,8 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     style={{
                       fontSize:'25px'
                     }}
+                    title='Zoom in'
+                    aria-label='Zoom in'
                     onClick={(e)=>{
                       if(this.props.zoomMultiplier<1.5){
                         this.props.setZoomMode(true);
@@ -124,6 +128,8 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     style={{
                       fontSize:'25px'
                     }} 
+                    title='Zoom out'
+                    aria-label='Zoom out'
                     onClick={()=>{
                       if(this.props.zoomMultiplier>0.5){
                         this.props.setZoomMode(false);
@@ -136,6 +142,8 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     style={{
                       fontSize:'25px'
                     }} 
+                    title='Reset view'
+                    aria-label='Reset view'
                     onClick={()=>{
                       this.resetApp();
                     }}>
@@ -145,16 +153,20 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     style={{
                       fontSize:'20px'
                     }} 
+                    title='Import'
+                    aria-label='Import'
                     onClick={()=>{this.setState({importPopupView:true})}}>
-                Import
+                <i className="bi bi-download"></i>
             </button>
             <button className='navButton'
                     style={{
                       fontSize:'20px'
                     }} 
+                    title='Export'
+                    aria-label='Export'
                     onClick={()=>{this.props.setScrollState(false); 
                                   this.setState({exportPopupView:true})}}>
-                Export
+                <i className="bi bi-upload"></i>
             </button>
           </div> 
         </div>
