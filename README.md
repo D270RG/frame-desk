@@ -1,4 +1,11 @@
-Simple linked scheme builder based on React-Redux
+Simple client app - linked scheme editor based on React-Redux. 
+
+Features:
+> Zoomable grid and elements
+> Import/export to JSON
+> Image attachment
+
+Static preview: https://frame-desk-app.onrender.com
 
 -----------------------------------------------------------------------------------------------------------------------------------------------------------------
 
