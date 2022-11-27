@@ -395,7 +395,7 @@ class App extends React.Component<any>{
   render(){
     return(
       <div style={{height:'500px',width:'500px'}}>
-        <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{console.log('button');  this.props.frameAdded('yoyo',{x:130,y:130})}}>Add shit</Button>
+        <Button style={{zIndex:99999,position:'absolute'}} onClick={()=>{console.log('button');  this.props.frameAdded('Example',{x:130,y:130})}}>Add frame</Button>
         {this.renderFramesFromProps()}
         {this.renderLinksFromProps()}
         
