@@ -1,8 +1,9 @@
 @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.9.1/font/bootstrap-icons.css");
 
-$primaryColor: rgb(40, 52, 73);
+$primaryColor: rgb(32, 41, 58);
 $secondaryColor: rgb(83, 107, 148);
 $backgroundColor: rgb(25, 25, 29);
+$backgroundColorLight: rgb(32, 32, 38);
 $scrollbarColor: rgb(101, 113, 134);
 $outlineColor: rgba(110, 149, 215, 0.725);
 $textColor:rgb(166, 187, 224);
@@ -53,7 +54,6 @@ $xl: 1600px;
   }
 
   *::-webkit-scrollbar-track {
-    margin-top: $navHeight;
     background: $backgroundColor;
   }
 
@@ -96,7 +96,7 @@ $xl: 1600px;
 .pm-0{
     @include pm-0;
 }
-@mixin btn($padding-x,$padding-y,$backgroundColor,$borderColor,$textColor,$borderRadius:""){
+@mixin btn($padding-x,$padding-y,$backgroundColor,$hoverColor,$borderColor,$textColor,$borderRadius:""){
     padding-left:$padding-x;
     padding-right:$padding-x;
     padding-top:$padding-y;
@@ -117,6 +117,10 @@ $xl: 1600px;
     } @else {
         border-radius: $borderRadius;
     }
+    &:hover{
+        background-color:$hoverColor;
+    }
+
 }
 .textarea{
     width:100%;
@@ -127,7 +131,7 @@ $xl: 1600px;
     outline:none;
 }
 .holoButton{
-    @include btn($framePadding,0px,$backgroundColor,$secondaryColor,$textColor);
+    @include btn($framePadding,0px,$backgroundColor,$backgroundColorLight,$secondaryColor,$textColor);
 }
 .cursor-zoomIn{
     cursor:zoom-in;
@@ -161,7 +165,7 @@ body{
     text-align: end;
 }
 .navButton{
-    @include btn($framePadding,0px,$backgroundColor,$secondaryColor,$textColor);
+    @include btn($framePadding,0px,$backgroundColor,$backgroundColorLight,$secondaryColor,$textColor);
     width:'10%';
     height:'100%';
 }

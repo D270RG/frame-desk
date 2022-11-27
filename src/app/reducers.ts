@@ -30,9 +30,9 @@ const listenersStateInitialState = {
 const graphInitialState = {
   frames:{
     data:{
-      0:{label: 'Example text', embedLink:{type:'image',url:'https://i.imgur.com/JeWDIlv.png',maxSizes:null}, position:{x:100,y:100},size:{x:0,y:0}},
-      1:{label: 'Another example text',embedLink:{type:'image',url:'http://www.google.com/intl/en_ALL/images/logo.gif',maxSizes:null}, position:{x:200,y:500},size:{x:0,y:0}},
-      2:{label: 'Very large multiline example text, hello!',embedLink:null, position:{x:500,y:100},size:{x:0,y:0}}
+      0:{label: 'Write something here', embedLink:{type:'image',url:'https://i.imgur.com/mb2vMgH.jpeg',maxSizes:null}, position:{x:100,y:100},size:{x:0,y:0}},
+      1:{label: 'Example frame 2',embedLink:null, position:{x:600,y:400},size:{x:0,y:0}},
+      2:{label: 'Example frame 3',embedLink:null, position:{x:800,y:200},size:{x:0,y:0}}
     },
     keys:[0,1,2]
   },

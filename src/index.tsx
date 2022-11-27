@@ -96,12 +96,12 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                                                   }, null, 4)
                                               } readOnly={true} label='Export' externalStateAction={this.exportPopupExternalAction}/>}
         <div className='navBar'>
-          <div style={{width:'50%',height:'100%',marginTop:'12px',marginLeft:'5px',display:'flex',flexDirection:'row'}}>
+          <div style={{height:'100%',marginTop:'12px',marginLeft:'5px',display:'flex',flexDirection:'row'}}>
             <div className='logo' style={{display: 'inline-block',fontSize:'30px'}}>
               D
               </div>
           </div>
-          <div style={{width:'50%',height:'100%',display:'flex',flexDirection:'row'}}>
+          <div style={{width:'95%',height:'100%',display:'flex',justifyContent:'center'}}>
             <button className='navButton'
                     style={{
                       fontSize:'20px'
