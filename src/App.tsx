@@ -542,6 +542,11 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     super(props);
   }
   zoomMovement(mode:string,zoomPos:Position){
+    // var distance = Math.sqrt(Math.pow(e.offsetX,2)+Math.pow(e.offsetY,2)); 
+    // this.props.appRef.current.scrollBy(
+    //   Math.cos(Math.atan((e.offsetY)/e.offsetX))*distance*0.0685,
+    //   Math.sin(Math.atan((e.offsetY)/e.offsetX))*distance*0.0685,
+    //   ); 
     var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
     this.props.framesKeys.forEach((id:number)=>{
       var pos = this.props.framesData[id].position;
@@ -562,7 +567,6 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
       }
       switch(mode){
         case 'in':{
-          console.log(Math.abs(delta.x)*coef);
           this.props.frameMoved(id,posOp(pos,'+',change));
           break;
         }
@@ -586,13 +590,21 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
             } else {
               //true - zoomIn, false - zoomOut
               this.props.setLastClickPos({x:e.clientX,y:e.clientY});
+              var distance = Math.sqrt(Math.pow(e.offsetX,2)+Math.pow(e.offsetY,2)); 
+              var delta = {x:Math.cos(Math.atan((e.offsetY)/e.offsetX))*distance*0.0685,
+                           y:Math.sin(Math.atan((e.offsetY)/e.offsetX))*distance*0.0685}
               if(this.props.zoomMode){
-                //TODO - batch
-                this.zoomMovement('in',{x:e.clientX,y:e.clientY});
-                this.props.zoomIn();
+                if(this.props.zoomMultiplier<(1+0.0685*6)){
+                  this.props.appRef.current.scrollBy(delta.x,delta.y); 
+                  this.zoomMovement('in',{x:e.clientX,y:e.clientY});
+                  this.props.zoomIn();
+                }
               } else {
-                this.zoomMovement('out',{x:e.clientX,y:e.clientY});
-                this.props.zoomOut();
+                if(this.props.zoomMultiplier>(1-0.0685*8)){
+                  this.props.appRef.current.scrollBy(-delta.x,-delta.y); 
+                  this.zoomMovement('out',{x:e.clientX,y:e.clientY});
+                  this.props.zoomOut();
+                }
               }
             }
           }
@@ -623,8 +635,12 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   }
   render(){
     return(
-      <div className={'clickbox'} ref={this.clickboxRef} style={{zIndex:this.props.zIndex,position:'absolute'}}>
-        <div style={{width:'100%',height:'100%',position:'absolute',top:50-this.props.lastClickPos.y*(this.props.zoomMultiplier-1),left:-this.props.lastClickPos.x*(this.props.zoomMultiplier-1)}}>
+      <div className={'clickbox'} ref={this.clickboxRef} style={{zIndex:this.props.zIndex,position:'absolute',overflow:'hidden',
+        width:80*100*this.props.zoomMultiplier,height:80*50*this.props.zoomMultiplier}}>
+        <div style={{width:'100%',height:'100%',
+                     position:'absolute',
+                     top:50
+                    }}>
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <pattern id="smallGrid" width={8*this.props.zoomMultiplier} height={8*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
@@ -633,7 +649,7 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
               <pattern id="grid"  width={80*this.props.zoomMultiplier} height={80*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
                 <rect width={80*this.props.zoomMultiplier} height={80*this.props.zoomMultiplier} fill="url(#smallGrid)"/>
                 <path d={"M "+80*this.props.zoomMultiplier+" 0 L 0 0 0 "+80*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="1"/>
-              </pattern>g
+              </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#grid)" />
           </svg>

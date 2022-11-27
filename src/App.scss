@@ -52,7 +52,7 @@ $xl: 1600px;
   }
 
   *::-webkit-scrollbar-track {
-    margin: 80px;
+    margin-top: 50px;
     background: $backgroundColor;
   }
 
@@ -62,7 +62,7 @@ $xl: 1600px;
   }
   ::-webkit-scrollbar-corner {
     background: $backgroundColor
-  }
+  } 
 /*----------------------------------*/
 @mixin m-0{
     margin: 0px!important;
@@ -128,6 +128,12 @@ $xl: 1600px;
 .holoButton{
     @include btn($framePadding,0px,$backgroundColor,$secondaryColor,$textColor);
 }
+.cursor-zoomIn{
+    cursor:zoom-in;
+}
+.cursor-zoomOut{
+    cursor:zoom-out;
+}
 body{
     overflow:hidden;
 }
@@ -159,8 +165,9 @@ body{
     height:'100%';
 }
 .app{
-    width: 100%;
-    height: 100%;
+    width:100%;
+    height:100%;
+    left:0px;
     background-color: $backgroundColor;
     overflow:scroll;
 }
@@ -227,9 +234,9 @@ body{
     background-color:$shadedColor
 }
 .clickbox{
+    position:absolute;
     width:1000vw;
     height:1000vh;
-    overflow:hidden;
 }
 .popupModal{
     @include pm-0;
