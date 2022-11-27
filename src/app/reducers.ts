@@ -103,14 +103,17 @@ const zoomSlice = createSlice({
   name: 'zoom',
   initialState: zoomInitialState,
   reducers:{
-    setZoom:(state, action:PayloadAction<ImportActionPayload>)=>{
+    importZoom:(state, action:PayloadAction<ImportActionPayload>)=>{
       state.zoomMultiplier = action.payload.dataToImport.zoomMultiplier as number;
     },
+    setZoom:(state, action:PayloadAction<Payload>)=>{
+      state.zoomMultiplier = action.payload.zoomMultiplier as number;
+    },
     zoomIn:(state, action:PayloadAction<Payload>)=>{
-        state.zoomMultiplier += 0.0685*state.zoomMultiplier;
+        state.zoomMultiplier += 0.1*state.zoomMultiplier;
     },
     zoomOut:(state, action:PayloadAction<Payload>)=>{
-        state.zoomMultiplier -= 0.0735*state.zoomMultiplier;
+        state.zoomMultiplier -= 0.1*state.zoomMultiplier;
     },
     setZoomMode:(state, action:PayloadAction<Payload>)=>{
         state.zoomMode = action.payload.zoomMode as boolean|null
@@ -218,7 +221,6 @@ const graphSlice = createSlice({
       }
     },
     embedAdded:(state,action:PayloadAction<Payload>)=>{
-      console.log(action.payload.id,'embed added',action.payload.maxSizes);
       state.frames!.data[action.payload.id as number].embedLink = 
       {
        type:action.payload.type as string,

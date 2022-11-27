@@ -15,6 +15,7 @@ const _frameMinHeight = parseFloat(styles.frameMinHeight);
 const _framePadding = parseFloat(styles.framePadding);
 
 const _handleHeight = parseFloat(styles.handleHeight);
+const _navHeight = parseFloat(styles.navHeight);
 const _borderRadius = parseFloat(styles.borderRadius);
 
 const _lineStrokeWidth = parseFloat(styles.lineStrokeWidth);
@@ -219,11 +220,13 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
       <div className='w-100 pm-0'>
         <ScalableTextarea className='pm-0 textarea' 
                           style={{
-                                 fontSize:_fontSize,
+                                 fontSize:_fontSize
                                 }}
                           zoomMultiplier={this.props.zoomMultiplier} 
                           rows={3} 
-                          passedRef={this.relabelRef} 
+                          passedRef={this.relabelRef}
+                           
+                          // ref = {this.relabelRef}
                           defaultValue={this.props.text}/>
         {this.props.embedLink===null && <ControlBox_w id={this.props.id} 
         embedPopupCallback={this.props.popupCallback}/>}
@@ -235,6 +238,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
       zoomMultiplier={this.props.zoomMultiplier}
       style={{
               maxWidth:this.state.maxTextWidth,
+              minWidth:this.state.maxTextWidth,
               fontSize:_fontSize,
               marginBottom:_framePadding,
               marginLeft:_framePadding,
@@ -334,9 +338,8 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
       <div style={{zIndex:this.props.zIndex}}>
         <ScalableDiv className={this.props.isSelected ? 'frame wrap active' : 'frame wrap'} 
                      zoomMultiplier={this.props.zoomMultiplier}
-                     immutableStyles = {['left','top']}
                      style={{
-                      borderRadius:_borderRadius,
+                      // borderRadius:_borderRadius,
                       left:this.props.position.x,
                       top:this.props.position.y,
                      }} 
@@ -345,8 +348,8 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                            style={{
                               marginBottom: _framePadding,
                               height:_handleHeight,
-                              borderTopLeftRadius:_borderRadius,
-                              borderTopRightRadius:_borderRadius,
+                              // borderTopLeftRadius:_borderRadius,
+                              // borderTopRightRadius:_borderRadius,
                             }} 
                             zoomMultiplier={this.props.zoomMultiplier}
                             passedRef={this.handleRef}>
@@ -541,42 +544,37 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   constructor(props:any){
     super(props);
   }
-  zoomMovement(mode:string,zoomPos:Position){
-    // var distance = Math.sqrt(Math.pow(e.offsetX,2)+Math.pow(e.offsetY,2)); 
-    // this.props.appRef.current.scrollBy(
-    //   Math.cos(Math.atan((e.offsetY)/e.offsetX))*distance*0.0685,
-    //   Math.sin(Math.atan((e.offsetY)/e.offsetX))*distance*0.0685,
-    //   ); 
-    var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
-    this.props.framesKeys.forEach((id:number)=>{
-      var pos = this.props.framesData[id].position;
-      var center = zoomPos;
-      var delta = posOp(pos,'-',center);
-      var change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
-      if(delta.x<0 && delta.y<0){
-        change = posOp(change,'*',{x:-1,y:-1});
-      }
-      if(delta.x>0 && delta.y>0){
-       //default
-      }
-      if(delta.x<0 && delta.y>0){
-        change = posOp(change,'*',{x:-1,y:1});
-      }
-      if(delta.x>0 && delta.y<0){
-        change = posOp(change,'*',{x:1,y:-1});
-      }
-      switch(mode){
-        case 'in':{
-          this.props.frameMoved(id,posOp(pos,'+',change));
-          break;
-        }
-        case 'out':{
-          this.props.frameMoved(id,posOp(pos,'-',change));
-          break;
-        }
-      }
-    })
-  }
+  // zoomMovement(mode:string,zoomPos:Position){
+  //   var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
+  //   this.props.framesKeys.forEach((id:number)=>{
+  //     var pos = this.props.framesData[id].position;
+  //     var center = zoomPos;
+  //     var delta = posOp(pos,'-',center);
+  //     var change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
+  //     if(delta.x<0 && delta.y<0){
+  //       change = posOp(change,'*',{x:-1,y:-1});
+  //     }
+  //     if(delta.x>0 && delta.y>0){
+  //      //default
+  //     }
+  //     if(delta.x<0 && delta.y>0){
+  //       change = posOp(change,'*',{x:-1,y:1});
+  //     }
+  //     if(delta.x>0 && delta.y<0){
+  //       change = posOp(change,'*',{x:1,y:-1});
+  //     }
+  //     switch(mode){
+  //       case 'in':{
+  //         this.props.frameMoved(id,posOp(pos,'+',change));
+  //         break;
+  //       }
+  //       case 'out':{
+  //         this.props.frameMoved(id,posOp(pos,'-',change));
+  //         break;
+  //       }
+  //     }
+  //   })
+  // }
   clickboxHandlers={
     onMouseDown:(e: any)=>{
         if (e.button === 0){
@@ -584,25 +582,23 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
             this.props.frameSetEdit(null);
           } else {
             if(this.props.zoomMode===null){
-              this.props.effectSetStart('selectionBoxEffect',posOp({x:e.pageX,y:e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
-              this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX,y: e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+              this.props.effectSetStart('selectionBoxEffect',posOp({x:e.pageX,y:e.pageY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+              this.props.effectSetEnd('selectionBoxEffect',posOp({x:e.pageX,y: e.pageY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
               this.props.effectSetActive('selectionBoxEffect',true);
             } else {
               //true - zoomIn, false - zoomOut
               this.props.setLastClickPos({x:e.clientX,y:e.clientY});
               var distance = Math.sqrt(Math.pow(e.offsetX,2)+Math.pow(e.offsetY,2)); 
-              var delta = {x:Math.cos(Math.atan((e.offsetY)/e.offsetX))*distance*0.0685,
-                           y:Math.sin(Math.atan((e.offsetY)/e.offsetX))*distance*0.0685}
+              var delta = {x:Math.cos(Math.atan((e.offsetY)/e.offsetX))*distance*0.1,
+                           y:Math.sin(Math.atan((e.offsetY)/e.offsetX))*distance*0.1}
               if(this.props.zoomMode){
-                if(this.props.zoomMultiplier<(1+0.0685*6)){
+                if(this.props.zoomMultiplier<(1+0.1*6)){
                   this.props.appRef.current.scrollBy(delta.x,delta.y); 
-                  this.zoomMovement('in',{x:e.clientX,y:e.clientY});
                   this.props.zoomIn();
                 }
               } else {
-                if(this.props.zoomMultiplier>(1-0.0685*8)){
+                if(this.props.zoomMultiplier>(1-0.1*8)){
                   this.props.appRef.current.scrollBy(-delta.x,-delta.y); 
-                  this.zoomMovement('out',{x:e.clientX,y:e.clientY});
                   this.props.zoomOut();
                 }
               }
@@ -635,20 +631,20 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   }
   render(){
     return(
+      //100-horizontal squares amount, 50-vertical squares amount, TODO: prevent overflow
       <div className={'clickbox'} ref={this.clickboxRef} style={{zIndex:this.props.zIndex,position:'absolute',overflow:'hidden',
-        width:80*100*this.props.zoomMultiplier,height:80*50*this.props.zoomMultiplier}}>
+        width:100*100*this.props.zoomMultiplier,height:100*50*this.props.zoomMultiplier}}>
         <div style={{width:'100%',height:'100%',
-                     position:'absolute',
-                     top:50
+                     position:'absolute'
                     }}>
           <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
             <defs>
-              <pattern id="smallGrid" width={8*this.props.zoomMultiplier} height={8*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
-                <path d={"M "+8*this.props.zoomMultiplier+" 0 L 0 0 0 "+8*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="0.5"/>
+              <pattern id="smallGrid" width={10*this.props.zoomMultiplier} height={10*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
+                <path d={"M "+10*this.props.zoomMultiplier+" 0 L 0 0 0 "+10*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="0.5"/>
               </pattern>
-              <pattern id="grid"  width={80*this.props.zoomMultiplier} height={80*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
-                <rect width={80*this.props.zoomMultiplier} height={80*this.props.zoomMultiplier} fill="url(#smallGrid)"/>
-                <path d={"M "+80*this.props.zoomMultiplier+" 0 L 0 0 0 "+80*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="1"/>
+              <pattern id="grid"  width={100*this.props.zoomMultiplier} height={100*this.props.zoomMultiplier} patternUnits="userSpaceOnUse">
+                <rect width={100*this.props.zoomMultiplier} height={100*this.props.zoomMultiplier} fill="url(#smallGrid)"/>
+                <path d={"M "+100*this.props.zoomMultiplier+" 0 L 0 0 0 "+100*this.props.zoomMultiplier} fill="none" stroke="gray" strokeWidth="1"/>
               </pattern>
             </defs>
             <rect width="100%" height="100%" fill="url(#grid)" />
@@ -685,13 +681,13 @@ class Tracker extends React.Component<TrackerProps,{}>{
   constructor(props:any){
     super(props);
   }
-  track(e:any){
+  track(e:any,clientOffset:Position){
     if(this.props.effectsDataAll['pseudolinkEffect'].isActive){
-      this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
-        y: e.pageY});
+      this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX+clientOffset.x,
+        y: e.pageY+clientOffset.y});
     }
     if(this.props.effectsDataAll['selectionBoxEffect'].isActive){
-      this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX,y: e.pageY},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+      this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX+clientOffset.x,y: e.pageY+clientOffset.y},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
     }
     if(this.props.effectsDataAll['pseudodragEffect'].isActive){
       this.props.effectSetEnd('pseudodragEffect',{x: e.pageX,
@@ -706,7 +702,7 @@ class Tracker extends React.Component<TrackerProps,{}>{
     }
   }
   onMouseMove=(e:any)=>{
-    this.track(e);
+    this.track(e,{x:0,y:-_navHeight});
   }
   componentDidMount(){
     document.addEventListener('mousemove',throttle(this.onMouseMove,10));
@@ -870,7 +866,8 @@ function mapAppState(state:RootState){
     editId: state.frameEditReducer.editId,
 
     slowMode: state.overlayEffectsReducer.slowMode,
-    zoomMode: state.zoomReducer.zoomMode
+    zoomMode: state.zoomReducer.zoomMode,
+    zoomMultiplier: state.zoomReducer.zoomMultiplier
   }
 }
 const mapAppDispatch = (dispatch:RootDispatch)=>({
@@ -902,12 +899,12 @@ const mapAppDispatch = (dispatch:RootDispatch)=>({
 });
 var appConnector = connect(mapAppState,mapAppDispatch);
 interface AppProps extends  ConnectedProps<typeof appConnector>{
-  scrollbarsVisibility:boolean
+  scrollbarsVisibility:boolean,
+  appRef:React.RefObject<any>
 }
 class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,popupId:number}>{
   frameW = 150;
   frameH = 40;
-  appRef = React.createRef<any>();
   constructor(props:any){
     super(props);
     this.state = {frameBuffer:[] as FrameElement[],popupView:false,popupId:0}
@@ -928,11 +925,11 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     this.props.elementsDeselected([]);
     this.props.elementsSelected(arr);
   }
-  jointDecorator(x1:number,y1:number,x2:number,y2:number,frameW1:number,frameH1:number,frameW2:number,frameH2:number){
-    x1+=frameW1/2;
-    y1+=frameH1/2;
-    x2+=frameW2/2;
-    y2+=frameH2/2;
+  jointDecorator(x1:number,y1:number,x2:number,y2:number,frameW1:number,frameH1:number,frameW2:number,frameH2:number,zoomMultiplier:number){
+    x1=(x1*zoomMultiplier+frameW1/2);
+    y1=(y1*zoomMultiplier+frameH1/2);
+    x2=(x2*zoomMultiplier+frameW2/2);
+    y2=(y2*zoomMultiplier+frameH2/2);
     return {x1,y1,x2,y2}
   }
   renderLinksFromProps(zIndex:number){
@@ -947,6 +944,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
         this.props.framesData[link.frame1].size.y,
         this.props.framesData[link.frame2].size.x,
         this.props.framesData[link.frame2].size.y,
+
+        this.props.zoomMultiplier
       );
       return(
       <Link_w 
@@ -995,8 +994,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
       var c = evt.keyCode
       var ctrlDown = evt.ctrlKey||evt.metaKey // Mac support
   
-      // Check for Alt+Gr (http://en.wikipedia.org/wiki/AltGr_key)
-      if (ctrlDown && evt.altKey) {console.log('altgr')}
+      // Check for Alt+Gr 
+      if (ctrlDown && evt.altKey) {/*do nothing*/}
   
       // Check for ctrl+c, v and x
       else if (ctrlDown && c==67) {
@@ -1162,12 +1161,12 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   render(){
     return(
-      <div ref={this.appRef} 
+      <div ref={this.props.appRef} 
            style={{position:'absolute',overflow:'scroll'}} 
            className={this.props.scrollbarsVisibility? 'app' : 'app hideScrolls'}>
         {this.state.popupView && <Popup readOnly={false} label='Enter image URL' externalStateAction={this.popupExternalAction}/>}
-        <Tracker_w appRef={this.appRef}/>
-        <Clickbox_w zIndex={1} appRef={this.appRef} areaSelectionCallback={this.selectElementsInArea.bind(this)}
+        <Tracker_w appRef={this.props.appRef}/>
+        <Clickbox_w zIndex={1} appRef={this.props.appRef} areaSelectionCallback={this.selectElementsInArea.bind(this)}
                                areaDeselectionCallback={this.props.elementsDeselected}/>
         {this.renderFramesFromProps(2)}
         {this.renderLinksFromProps(2)}

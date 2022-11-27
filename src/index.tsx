@@ -27,11 +27,12 @@ const mapInterfaceDispatch = (dispatch:RootDispatch) =>({
   frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
   zoomIn:()=>{dispatch(zoomSlice.actions.zoomIn({}))},
   zoomOut:()=>{dispatch(zoomSlice.actions.zoomOut({}))},
+  setZoom:(zoomMultiplier:number)=>{dispatch(zoomSlice.actions.setZoom({zoomMultiplier:zoomMultiplier}))},
   setScrollState:(state:boolean)=>{dispatch(listenersStateSlice.actions.setState({state:state}))},
   importState:(dataToImport:ImportData)=>{  
       batch(()=>{
         dispatch(graphSlice.actions.importState({dataToImport:dataToImport}));
-        dispatch(zoomSlice.actions.setZoom({dataToImport:dataToImport}));
+        dispatch(zoomSlice.actions.importZoom({dataToImport:dataToImport}));
       }); 
   },
   setZoomMode:(zoomMode:boolean|null)=>{
@@ -45,6 +46,7 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                                                         exportPopupView:boolean,
                                                         importPopupView:boolean,
                                                         scrollbarsVisibility:boolean}>{
+  appRef = React.createRef<any>();
   constructor(props:InterfaceProps){
     super(props);
     this.state = {frameAddPopupView:false,
@@ -60,13 +62,10 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
   }
   importPopupExternalAction=(isVisible:boolean,value:string)=>{
     this.props.setScrollState(true); 
-    console.log(value);
     if(value!==''){
       var dataToImport = JSON.parse(value);
-      console.log(dataToImport);
       const isImportData = (data:any):data is ImportData => true;
       if(isImportData(dataToImport)){
-        console.log('isData');
         this.props.importState(dataToImport as ImportData);
       }
     }
@@ -75,13 +74,13 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
   exportPopupExternalAction=(isVisible:boolean,value:string)=>{
     this.props.setScrollState(true); 
     if(value !== ''){
-      navigator.clipboard.writeText(value).then(function() {
-        console.log('Async: Copying to clipboard was successful!');
-      }, function(err) {
-        console.error('Async: Could not copy text: ', err);
-      });
+      navigator.clipboard.writeText(value);
     }
     this.setState({exportPopupView:isVisible});
+  }
+  resetApp=()=>{
+    this.props.setZoom(1.0);
+    this.appRef.current.scrollTo(0,0);
   }
   render(){
     return(
@@ -117,8 +116,6 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     onClick={(e)=>{
                       if(this.props.zoomMultiplier<1.5){
                         this.props.setZoomMode(true);
-                        // this.zoomMovement('in',{x:e.clientX,y:e.clientY});
-                        // this.props.zoomIn();
                       }
                     }}>
                 <i className="bi bi-zoom-in"></i>
@@ -130,11 +127,19 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
                     onClick={()=>{
                       if(this.props.zoomMultiplier>0.5){
                         this.props.setZoomMode(false);
-                        // this.zoomMovement('out');
-                        // this.props.zoomOut();
+
                       }
                     }}>
                 <i className="bi bi-zoom-out"></i>
+            </button>
+            <button className='navButton'
+                    style={{
+                      fontSize:'25px'
+                    }} 
+                    onClick={()=>{
+                      this.resetApp();
+                    }}>
+                <i className="bi bi-arrow-clockwise"></i>
             </button>
             <button className='navButton'
                     style={{
@@ -153,7 +158,7 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
             </button>
           </div> 
         </div>
-        <App_w scrollbarsVisibility={this.state.scrollbarsVisibility}/>
+        <App_w scrollbarsVisibility={this.state.scrollbarsVisibility} appRef={this.appRef}/>
       </div>
     );
   }

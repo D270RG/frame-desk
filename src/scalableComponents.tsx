@@ -9,6 +9,7 @@ declare module 'csstype' {
   //---general static components----
   interface scalableContainerProps{
     onClick?:any,
+    scalableStyle?:React.CSSProperties,
     style?:React.CSSProperties,
     children?:React.ReactNode,
     className?:string,
@@ -30,7 +31,7 @@ declare module 'csstype' {
               if(!this.props.immutableStyles.includes(key)){
                 if(typeof(style)==='string'){
                   if(style.indexOf('px')!==-1){
-                    calculatedStyles[key] = (parseFloat(style)*this.props.zoomMultiplier).toString()+'px';
+                    calculatedStyles[key] = (parseFloat(style)*(this.props.zoomMultiplier)).toString()+'px';
                   }
                 } else if(typeof(style)==='number'){
                   calculatedStyles[key] = (style*this.props.zoomMultiplier).toString()+'px';
@@ -38,9 +39,9 @@ declare module 'csstype' {
               }
             } else {
               if(typeof(style)==='string'){
-                if(style.indexOf('px')!==-1){
-                  calculatedStyles[key] = (parseFloat(style)*this.props.zoomMultiplier).toString()+'px';
-                }
+                // if(style.indexOf('px')!==-1){
+                //   calculatedStyles[key] = (parseFloat(style)*this.props.zoomMultiplier).toString()+'px';
+                // }
               } else if(typeof(style)==='number'){
                 calculatedStyles[key] = (style*this.props.zoomMultiplier).toString()+'px';
               }
@@ -59,14 +60,13 @@ declare module 'csstype' {
       super(props);
     }
     render(){
-      var calculatedStyles = this.mapStyles(this.props.style);
       return(
         <div className={this.props.className} 
                 draggable={false}
                 id={this.props.id}
                 onClick={this.props.onClick}
                 ref={this.props.passedRef}
-                style={calculatedStyles}>
+                style={this.mapStyles(this.props.style)}>
           {this.props.children}
         </div>
       );
