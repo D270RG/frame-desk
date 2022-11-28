@@ -13,6 +13,10 @@ function posOp(a:Position,operation:string,b:Position){
       }
       case '*':{
         newPos = {x:a.x*b.x,y:a.y*b.y};
+        break;
+      }
+      case '/':{
+        newPos = {x:a.x/b.x,y:a.y/b.y};
       }
     }
     return(newPos);

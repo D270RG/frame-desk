@@ -200,7 +200,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
       // this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
       //   y: e.pageY});
       // this.props.effectSetId('pseudolinkEffect',this.props.id);
-      this.props.pseudolinkCallback(this.props.id,{x: e.pageX,y:e.pageY},true);
+      this.props.pseudolinkCallback(this.props.id,{x: e.pageX,y:e.pageY-_navHeight},true);
       // this.props.effectSetActive('pseudolinkEffect',true); //todo: 4 actions -> 1 action
     }
   },
@@ -616,7 +616,10 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
       },
     onMouseUp:(e:any)=>{
       if(this.props.effectsDataSelectionBox.isActive){ //todo: unlink effects isActive from positions to fix redundant clickbox redraw
-        this.props.areaSelectionCallback(this.props.effectsDataSelectionBox.startPos,this.props.effectsDataSelectionBox.endPos);
+        this.props.areaSelectionCallback(
+                                         posOp(this.props.effectsDataSelectionBox.startPos,'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),
+                                         posOp(this.props.effectsDataSelectionBox.endPos,'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier})
+                                        );
       }
       if(this.props.effectsDataPseudodrag.isActive){
         this.props.framesMovedRelativeSinglePosition(this.props.selectedIds,posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataPseudodrag.startPos));

@@ -1,23 +1,11 @@
 import { createSlice,configureStore,current  } from "@reduxjs/toolkit"
 import type { PayloadAction} from '@reduxjs/toolkit'
 import type {LinkType,frameEditType,overlayEffectsType,Action,graphStateType,Payload,Position,OverlayEffectPayload,FrameElement,EmbedData, ImportData, ImportActionPayload} from './interfaces'
+import { posOp } from "../PosUtils"
 
 function nextframeId(framesKeys:any) {
   const maxId = framesKeys.reduce((maxId:any, frameKey:any) => Math.max(frameKey, maxId), -1)
   return maxId + 1
-}
-function posOp(a:Position,operation:string,b:Position){
-  let newPos:Position = {x:0,y:0};
-  switch(operation){
-    case '+':{
-      newPos = {x:a.x+b.x,y:a.y+b.y};
-      break;
-    }
-    case '-':{
-      newPos = {x:a.x-b.x,y:a.y-b.y};
-    }
-  }
-  return(newPos);
 }
 function posShift(obj:FrameElement,shift:Position){
   return({...obj,
