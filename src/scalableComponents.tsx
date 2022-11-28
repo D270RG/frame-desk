@@ -23,10 +23,10 @@ declare module 'csstype' {
       super(props);
     } 
     mapStyles=(stylesFromProps:React.CSSProperties|undefined)=>{
-        var calculatedStyles = stylesFromProps;
+        let calculatedStyles = stylesFromProps;
         if(calculatedStyles!==undefined){
           for (let key in calculatedStyles) {
-            var style:string|number = calculatedStyles[key];
+            let style:string|number = calculatedStyles[key];
             if(this.props.immutableStyles!==undefined){
               if(!this.props.immutableStyles.includes(key)){
                 if(typeof(style)==='string'){
@@ -82,7 +82,7 @@ declare module 'csstype' {
       super(props);
     }
     render(){
-      var calculatedStyles = this.mapStyles(this.props.style);
+      let calculatedStyles = this.mapStyles(this.props.style);
       return(
         <button className={this.props.className} 
                 id={this.props.id}
@@ -107,7 +107,7 @@ declare module 'csstype' {
       super(props);
     }
     render(){
-      var calculatedStyles = this.mapStyles(this.props.style);
+      let calculatedStyles = this.mapStyles(this.props.style);
       return(
         <img className={this.props.className}
             ref={this.props.passedRef} 
@@ -131,7 +131,7 @@ declare module 'csstype' {
       super(props);
     }
     render(){
-      var calculatedStyles = this.mapStyles(this.props.style);
+      let calculatedStyles = this.mapStyles(this.props.style);
       return(
         <line ref={this.props.passedRef}
               x1={this.props.x1} y1={this.props.y1} 
@@ -153,7 +153,7 @@ declare module 'csstype' {
         super(props);
     }
     render(){
-        var calculatedStyles = this.mapStyles(this.props.style);
+        let calculatedStyles = this.mapStyles(this.props.style);
         return(<textarea id={this.props.id}
                          className={this.props.className}
                          style={calculatedStyles} 

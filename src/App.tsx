@@ -27,7 +27,7 @@ function mapControlBoxState(state:RootState){
     zoomMultiplier: state.zoomReducer.zoomMultiplier
   }
 }
-var controlBoxConnector = connect(mapControlBoxState);
+let controlBoxConnector = connect(mapControlBoxState);
 interface ControlBoxProps extends ConnectedProps<typeof controlBoxConnector>{
   id:number,
   embedPopupCallback: (arg0: boolean, arg1: any) => void,
@@ -55,7 +55,7 @@ class ControlBox extends React.Component<ControlBoxProps,{}>{
     );
   }
 }
-var ControlBox_w = controlBoxConnector(ControlBox);
+let ControlBox_w = controlBoxConnector(ControlBox);
 
 
 function mapFrameState(state:RootState){
@@ -79,7 +79,7 @@ const mapFrameDispatch = (dispatch:RootDispatch) =>({
   embedRemoved:(id:number)=>{dispatch(graphSlice.actions.embedRemoved({id:id}))}
 });
 
-var frameConnector = connect(mapFrameState,mapFrameDispatch);
+let frameConnector = connect(mapFrameState,mapFrameDispatch);
 interface FrameProps extends ConnectedProps<typeof frameConnector>{                   
   id:number,
   text:string,
@@ -109,7 +109,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  }
  resize(extSize:Position|null){
   if(extSize === null){
-    var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
+    let size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
     this.props.frameSetSize(this.props.id,size);
   } else {
     this.props.frameSetSize(this.props.id,extSize);
@@ -117,7 +117,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  }
   resizeX(extSize:Position|null){
     if(extSize === null){
-      var size = {x:(this.wrapRef.current as any)!.clientWidth,y:this.props.size.y};
+      let size = {x:(this.wrapRef.current as any)!.clientWidth,y:this.props.size.y};
       this.props.frameSetSize(this.props.id,size);
     } else {
       this.props.frameSetSize(this.props.id,{x:extSize.x,y:this.props.size.y});
@@ -125,14 +125,14 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  }
  resizeY(extSize:Position|null){
   if(extSize === null){
-    var size = {x:this.props.size.x,y:(this.wrapRef.current as any)!.clientHeight};
+    let size = {x:this.props.size.x,y:(this.wrapRef.current as any)!.clientHeight};
     this.props.frameSetSize(this.props.id,size);
   } else {
     this.props.frameSetSize(this.props.id,{x:this.props.size.x,y:extSize.y});
   }
  }
  componentDidUpdate(prevProps:any){
-  var size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
+  let size = {x:(this.wrapRef.current as any)!.clientWidth,y:(this.wrapRef.current as any)!.clientHeight};
   if(this.props.size.y!=size.y || this.props.size.x!=size.x){
     //sync redux stored sizes with actual DOM sizes
     this.resize(null);
@@ -253,16 +253,16 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
   }
  }
  loadEmbed(){
-    var deleteEmbed = ()=>{
+    let deleteEmbed = ()=>{
       this.props.embedRemoved(this.props.id);
     }
-    var onError = ()=>{
+    let onError = ()=>{
       this.props.embedAdded(this.props.id,'image',require('./noimage.png'),{x:400,y:400});
     }
     if(this.props.embedLink!==null && this.props.embedLink.maxSizes!==null){
       switch(this.props.embedLink.type as string){
         case 'image':{
-          var img = 
+          let img = 
                       <ScalableImg ref={this.embedRef} 
                                    zoomMultiplier={this.props.zoomMultiplier}
                                    draggable={false}
@@ -432,7 +432,7 @@ const mapLineDispatch = (dispatch:RootDispatch) =>({
   linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))}
 });
 
-var lineConnector = connect(mapLineState,mapLineDispatch);
+let lineConnector = connect(mapLineState,mapLineDispatch);
 interface LineProps extends ConnectedProps<typeof lineConnector>{
   x1:number,
   y1:number,
@@ -475,7 +475,7 @@ function mapLinkState(state:RootState){
     zoomMultiplier: state.zoomReducer.zoomMultiplier
   }
 }
-var linkConnector = connect(mapLinkState);
+let linkConnector = connect(mapLinkState);
 interface LinkProps extends ConnectedProps<typeof linkConnector>{
   zIndex:number,
   x1:number,
@@ -539,7 +539,7 @@ const mapClickboxDispatch = (dispatch:RootDispatch)=>({
   zoomIn:()=>{dispatch(zoomSlice.actions.zoomIn({}))},
   zoomOut:()=>{dispatch(zoomSlice.actions.zoomOut({}))},
 });
-var clickboxConnector = connect(mapClickboxState,mapClickboxDispatch);
+let clickboxConnector = connect(mapClickboxState,mapClickboxDispatch);
 interface ClickboxProps extends ConnectedProps<typeof clickboxConnector>{
   areaSelectionCallback: (arg0: any, arg1: any) => void,
   areaDeselectionCallback: (arg0: any, arg1: any) => void,
@@ -553,12 +553,12 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     super(props);
   }
   // zoomMovement(mode:string,zoomPos:Position){
-  //   var coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
+  //   let coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
   //   this.props.framesKeys.forEach((id:number)=>{
-  //     var pos = this.props.framesData[id].position;
-  //     var center = zoomPos;
-  //     var delta = posOp(pos,'-',center);
-  //     var change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
+  //     let pos = this.props.framesData[id].position;
+  //     let center = zoomPos;
+  //     let delta = posOp(pos,'-',center);
+  //     let change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
   //     if(delta.x<0 && delta.y<0){
   //       change = posOp(change,'*',{x:-1,y:-1});
   //     }
@@ -596,8 +596,8 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
             } else {
               //true - zoomIn, false - zoomOut
               this.props.setLastClickPos({x:e.clientX,y:e.clientY});
-              var distance = Math.sqrt(Math.pow(e.offsetX,2)+Math.pow(e.offsetY,2)); 
-              var delta = {x:Math.cos(Math.atan((e.offsetY)/e.offsetX))*distance*0.1,
+              let distance = Math.sqrt(Math.pow(e.offsetX,2)+Math.pow(e.offsetY,2)); 
+              let delta = {x:Math.cos(Math.atan((e.offsetY)/e.offsetX))*distance*0.1,
                            y:Math.sin(Math.atan((e.offsetY)/e.offsetX))*distance*0.1}
               if(this.props.zoomMode){
                 if(this.props.zoomMultiplier<(1+0.1*6)){
@@ -681,7 +681,7 @@ const mapTrackerDispatch = (dispatch:RootDispatch)=>({
 
   framesMoved:(ids:number[],positions:Position[])=>{dispatch(graphSlice.actions.framesMoved({ids:ids,positions:positions}))}
 });
-var trackerConnector = connect(mapTrackerState,mapTrackerDispatch);
+let trackerConnector = connect(mapTrackerState,mapTrackerDispatch);
 interface TrackerProps extends ConnectedProps<typeof trackerConnector>{
   appRef:React.RefObject<any>
 }
@@ -702,7 +702,7 @@ class Tracker extends React.Component<TrackerProps,{}>{
         y: e.pageY});
     }
     if(this.props.effectsDataAll['dragEffect'].isActive){
-      var positions:Position[] = []; 
+      let positions:Position[] = []; 
       this.props.effectsDataAll['dragEffect'].keys.forEach((keyId:number)=>{
         positions.push(posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataAll.dragEffect.data[keyId].startPos));
       });
@@ -731,7 +731,7 @@ function selectionBoxState(state:RootState){
     effectsDataSelectionBox: state.overlayEffectsReducer.effects.data.selectionBoxEffect
   }
 }
-var selectionBoxConnector = connect(selectionBoxState);
+let selectionBoxConnector = connect(selectionBoxState);
 interface SelectionBoxProps extends ConnectedProps<typeof selectionBoxConnector>{
   zIndex:number
 }
@@ -800,7 +800,7 @@ function pseudodragBoxState(state:RootState){
     effectsDataPseudodrag: state.overlayEffectsReducer.effects.data.pseudodragEffect
   }
 }
-var pseudodragBoxConnector = connect(pseudodragBoxState);
+let pseudodragBoxConnector = connect(pseudodragBoxState);
 interface PseudodragBoxProps extends ConnectedProps<typeof pseudodragBoxConnector>{
   zIndex:number
 }
@@ -905,7 +905,7 @@ const mapAppDispatch = (dispatch:RootDispatch)=>({
   embedAdded:(id:number,type:string,url:string,maxSizes:Position)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url,maxSizes:maxSizes}))},
   setZoomMode:(zoomMode:null|boolean)=>{dispatch(zoomSlice.actions.setZoomMode({zoomMode:zoomMode}))}
 });
-var appConnector = connect(mapAppState,mapAppDispatch);
+let appConnector = connect(mapAppState,mapAppDispatch);
 interface AppProps extends  ConnectedProps<typeof appConnector>{
   scrollbarsVisibility:boolean,
   appRef:React.RefObject<any>
@@ -922,8 +922,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
       return (((verticePos.x+shift.x)>startPos.x && (verticePos.x+shift.x)<endPos.x) || ((verticePos.x+shift.x)<startPos.x && (verticePos.x+shift.x)>endPos.x))
       && (((verticePos.y+shift.y)>startPos.y && (verticePos.y+shift.y)<endPos.y)||((verticePos.y+shift.y)<startPos.y && (verticePos.y+shift.y)>endPos.y))
     }
-    var arr = this.props.framesKeys.filter((id:number) => {
-      var frame = this.props.framesData[id];
+    let arr = this.props.framesKeys.filter((id:number) => {
+      let frame = this.props.framesData[id];
       return(verticePass(frame.position,{x:0,y:0})
         ||verticePass(frame.position,{x:frame.size.x,y:0})
         ||verticePass(frame.position,{x:frame.size.x,y:frame.size.y})
@@ -941,8 +941,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     return {x1,y1,x2,y2}
   }
   renderLinksFromProps(zIndex:number){
-    var links = this.props.links.map((link:LinkType) =>{
-      var positions = this.jointDecorator(
+    let links = this.props.links.map((link:LinkType) =>{
+      let positions = this.jointDecorator(
         this.props.framesData[link.frame1].position.x,
         this.props.framesData[link.frame1].position.y,
         this.props.framesData[link.frame2].position.x,
@@ -970,7 +970,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   copySelected(){
     if(this.props.selectedIds.length>0){
-      var frameArr:any[] = [];
+      let frameArr:any[] = [];
       this.props.selectedIds.forEach((id:number)=>{
         frameArr.push(posShift(this.props.framesData[id],{x:20,y:20}));
       });
@@ -985,8 +985,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   cutSelected(){
     if(this.props.selectedIds.length>0){
-      var frameArr:any[] = [];
-      var oldFrameIds:number[] = [];
+      let frameArr:any[] = [];
+      let oldFrameIds:number[] = [];
       this.props.selectedIds.forEach((id:number)=>{
         frameArr.push(this.props.framesData[id]);
         oldFrameIds.push(id);
@@ -999,8 +999,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
    globalHandlers={
     onCombinationPressed:(evt: KeyboardEvent)=>{
       evt = evt||window.event // IE support
-      var c = evt.keyCode
-      var ctrlDown = evt.ctrlKey||evt.metaKey // Mac support
+      let c = evt.keyCode
+      let ctrlDown = evt.ctrlKey||evt.metaKey // Mac support
   
       // Check for Alt+Gr 
       if (ctrlDown && evt.altKey) {/*do nothing*/}
@@ -1018,7 +1018,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     },
     onKeyDown:(e:KeyboardEvent)=>{
       if(e.key == 'Delete'){
-        var idsToDelete = [] as number[];
+        let idsToDelete = [] as number[];
         this.props.selectedIds!.forEach((selectedId:number)=>idsToDelete.push(selectedId));
         this.props.framesRemoved(idsToDelete);
       }
@@ -1054,10 +1054,10 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   //embed
   loadEmbed=(id:number,url:string)=>{
-    var img = new Image();
+    let img = new Image();
     img.src = url;
     img.onload = ()=>{
-      var ratio = img.width/img.height;
+      let ratio = img.width/img.height;
       if(ratio>=1){ //horizontal orientation
         const size = {x:400,y:400/ratio};
         this.props.embedAdded(id,'image',url,size);
@@ -1071,17 +1071,17 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   dragCallback=(fromId:number,eventX:number,eventY:number)=>{
     if(this.props.slowMode){
         if(this.props.selectedIds.length>0){
-          var max_x=0;
-          var max_y=0;
-          var min_x=999999;
-          var min_y=999999;
+          let max_x=0;
+          let max_y=0;
+          let min_x=999999;
+          let min_y=999999;
   
           this.props.selectedIds.forEach((selectedId:number)=>{
-            var topLeft = {
+            let topLeft = {
                             x:this.props.framesData[selectedId].position.x,
                             y:this.props.framesData[selectedId].position.y
                           }
-            var bottomRight = {
+            let bottomRight = {
                                 x:this.props.framesData[selectedId].position.x+this.props.framesData[selectedId].size.x,
                                 y:this.props.framesData[selectedId].position.y+this.props.framesData[selectedId].size.y
                               }
@@ -1090,8 +1090,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
             if(topLeft.x < min_x){min_x=topLeft.x};
             if(topLeft.y < min_y){min_y=topLeft.y};
           });
-          var borderTopLeft = {x:min_x,y:min_y};
-          var borderBottomRight = {x:max_x,y:max_y};
+          let borderTopLeft = {x:min_x,y:min_y};
+          let borderBottomRight = {x:max_x,y:max_y};
   
           this.props.effectSetStart('pseudodragEffect',{x:eventX,y:eventY});
           this.props.effectSetEnd('pseudodragEffect',{x:eventX,y: eventY});
@@ -1144,8 +1144,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     this.loadEmbed(this.state.popupId,value);
   }
   renderFramesFromProps(zIndex:number):JSX.Element[]{
-    var arr = this.props.framesKeys.map((id:number) =>{
-      var isSelected = false;
+    let arr = this.props.framesKeys.map((id:number) =>{
+      let isSelected = false;
       if(this.props.selectedIds.includes(id)){
         isSelected = true;
       }

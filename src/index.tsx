@@ -40,7 +40,7 @@ const mapInterfaceDispatch = (dispatch:RootDispatch) =>({
   }
 });
 
-var interfaceConnector = connect(mapInterfaceState,mapInterfaceDispatch);
+let interfaceConnector = connect(mapInterfaceState,mapInterfaceDispatch);
 interface InterfaceProps extends ConnectedProps<typeof interfaceConnector>{}
 class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolean,
                                                         exportPopupView:boolean,
@@ -63,7 +63,7 @@ class Interface extends React.Component<InterfaceProps,{frameAddPopupView:boolea
   importPopupExternalAction=(isVisible:boolean,value:string)=>{
     this.props.setScrollState(true); 
     if(value!==''){
-      var dataToImport = JSON.parse(value);
+      let dataToImport = JSON.parse(value);
       const isImportData = (data:any):data is ImportData => true;
       if(isImportData(dataToImport)){
         this.props.importState(dataToImport as ImportData);

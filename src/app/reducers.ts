@@ -7,7 +7,7 @@ function nextframeId(framesKeys:any) {
   return maxId + 1
 }
 function posOp(a:Position,operation:string,b:Position){
-  var newPos:Position = {x:0,y:0};
+  let newPos:Position = {x:0,y:0};
   switch(operation){
     case '+':{
       newPos = {x:a.x+b.x,y:a.y+b.y};
@@ -256,7 +256,7 @@ const graphSlice = createSlice({
     },
     framesZoom:(state, action:PayloadAction<Payload>)=>{
       state.frames!.keys.forEach((id:number)=>{
-        var newSize = {
+        let newSize = {
           ...state.frames!.data[id as number].size,
           x: state.frames!.data[id as number].size.x*(action.payload.multiplier as number),
           y: state.frames!.data[id as number].size.y*(action.payload.multiplier as number),
@@ -266,7 +266,7 @@ const graphSlice = createSlice({
     },
     frameAdded:(state, action:PayloadAction<Payload>)=>{
       if(state.frames.keys.length<100){
-        var nextFrameId:number = nextframeId(state.frames!.keys as number[]);
+        let nextFrameId:number = nextframeId(state.frames!.keys as number[]);
         if(action.payload.size != undefined){
           state.frames!.data[nextFrameId] = 
             {
@@ -309,7 +309,7 @@ const graphSlice = createSlice({
       }
     },
     framesMoved:(state, action:PayloadAction<Payload>)=>{
-      for(var i = 0;i<action.payload.ids!.length;i++){
+      for(let i = 0;i<action.payload.ids!.length;i++){
         state.frames!.data[action.payload.ids![i]].position = action.payload.positions![i];
       }
     },
@@ -319,7 +319,7 @@ const graphSlice = createSlice({
               action.payload!.position!);
     },
     framesMovedRelative:(state, action:PayloadAction<Payload>)=>{
-      for(var i = 0;i<action.payload.ids!.length;i++){
+      for(let i = 0;i<action.payload.ids!.length;i++){
         state.frames!.data[action.payload.ids![i]].position = //action.payload.positions![i];
 
         posShift(state.frames!.data[action.payload.ids![i]].position,
@@ -327,7 +327,7 @@ const graphSlice = createSlice({
       }
     },
     framesMovedRelativeSinglePosition:(state, action:PayloadAction<Payload>)=>{
-      for(var i = 0;i<action.payload.ids!.length;i++){
+      for(let i = 0;i<action.payload.ids!.length;i++){
         state.frames!.data[action.payload.ids![i]].position = //action.payload.positions![i];
 
         posOp(state.frames!.data[action.payload.ids![i]].position,'+',
@@ -335,7 +335,7 @@ const graphSlice = createSlice({
         }
     },
     framesMovedRelativeSinglePositionAll:(state, action:PayloadAction<Payload>)=>{
-      for(var i = 0;i<state.frames.keys.length;i++){
+      for(let i = 0;i<state.frames.keys.length;i++){
         state.frames!.data[state.frames.keys[i]].position = //action.payload.positions![i];
 
         posOp(state.frames!.data[state.frames.keys[i]].position,'+',
@@ -345,11 +345,11 @@ const graphSlice = createSlice({
     linkAdded:(state, action:PayloadAction<Payload>)=>{
       if(action.payload.link!.frame1!==undefined && action.payload.link!.frame2!==undefined){
         if(action.payload.link!.frame1>action.payload.link!.frame2){ 
-          var buffer = action.payload.link!.frame2;
+          let buffer = action.payload.link!.frame2;
           action.payload.link!.frame2 = action.payload.link!.frame1;
           action.payload.link!.frame1 = buffer;
         } //swap values, frame1<frame2
-        var duplicates = state.links!.filter((link:LinkType)=>((link.frame1==action.payload.link!.frame1)&&(link.frame2==action.payload.link!.frame2)) 
+        let duplicates = state.links!.filter((link:LinkType)=>((link.frame1==action.payload.link!.frame1)&&(link.frame2==action.payload.link!.frame2)) 
                                                   || ((link.frame1==action.payload.link!.frame2)&&(link.frame2==action.payload.link!.frame1)));
         if((duplicates.length==0)&&(action.payload.link!.frame1!==action.payload.link!.frame2)){
             state.links!.push(action.payload.link as any);

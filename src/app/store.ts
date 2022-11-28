@@ -1,6 +1,6 @@
 import { configureStore } from '@reduxjs/toolkit';
 import {zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice, listenersStateSlice} from './reducers';
-var store =  configureStore({
+let store =  configureStore({
     reducer: {
       listenersStateReducer: listenersStateSlice.reducer,
       zoomReducer: zoomSlice.reducer,
