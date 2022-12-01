@@ -233,6 +233,9 @@ const graphSlice = createSlice({
     elementsSelected:(state,action:PayloadAction<Payload>)=>{
       state.selectedIds =state.selectedIds!.concat(action.payload.ids as number[]);
     },
+    elementsSelectedAll:(state,action:PayloadAction<Payload>)=>{
+      state.selectedIds = state.frames.keys as number[];
+    },
     elementsDeselected:(state,action:PayloadAction<Payload>)=>{
       if(action.payload.ids!.length===0){
         state.selectedIds!.length=0;

@@ -1104,6 +1104,9 @@ const mapAppDispatch = (dispatch: RootDispatch) => ({
   elementsSelected: (ids: number[]) => {
     dispatch(graphSlice.actions.elementsSelected({ ids: ids }));
   },
+  elementsSelectedAll:()=>{
+    dispatch(graphSlice.actions.elementsSelectedAll({}));
+  },
   elementsDeselected: (ids: number[]) => {
     dispatch(graphSlice.actions.elementsDeselected({ ids: ids }));
   },
@@ -1308,13 +1311,16 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
       // Check for ctrl+c, v and x
       else if (ctrlDown && c==67) {
         this.copySelected();
-      } // cs
+      } // c
       else if (ctrlDown && c==86) {
         this.pasteSelected();
       } // v
       else if (ctrlDown && c==88) {
         this.cutSelected();
       } // x
+      else if (ctrlDown && c==65) {
+        this.props.elementsSelectedAll();
+      } // a
     },
     onKeyDown:(e:KeyboardEvent)=>{
       if(e.key == 'Delete'){
