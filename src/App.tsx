@@ -64,19 +64,64 @@ function mapFrameState(state:RootState){
     zoomMultiplier: state.zoomReducer.zoomMultiplier
   }
 }
-const mapFrameDispatch = (dispatch:RootDispatch) =>({
-  frameSetSize:(id:number,size:Position)=>{dispatch(graphSlice.actions.frameSetSize({id:id,size:size}))},
-  frameRelabelled:(id:number,label:string)=>{dispatch(graphSlice.actions.frameRelabelled({id:id,label:label}))},
-  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
+const mapFrameDispatch = (dispatch: RootDispatch) => ({
+  frameSetSize: (id: number, size: Position) => {
+    dispatch(graphSlice.actions.frameSetSize({ id: id, size: size }));
+  },
+  frameRelabelled: (id: number, label: string) => {
+    dispatch(graphSlice.actions.frameRelabelled({ id: id, label: label }));
+  },
+  frameSetEdit: (id: number | null) => {
+    dispatch(frameEditSlice.actions.frameSetEdit({ id: id }));
+  },
 
-  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
-  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
-  effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
-  effectSetId:(type:OverlayEffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
+  effectSetStart: (type: OverlayEffectTypes["types"], startPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetStart({
+        type: type,
+        startPos: startPos,
+      })
+    );
+  },
+  effectSetEnd: (type: OverlayEffectTypes["types"], endPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetEnd({ type: type, endPos: endPos })
+    );
+  },
+  effectSetActive: (type: OverlayEffectTypes["types"], isActive: boolean) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetActive({
+        type: type,
+        isActive: isActive,
+      })
+    );
+  },
+  effectSetId: (type: OverlayEffectTypes["types"], id: number) => {
+    dispatch(overlayEffectsSlice.actions.effectSetId({ type: type, id: id }));
+  },
 
-  embedScaleMaxSize:(id:number,coordinate:string,scale:number)=>{dispatch(graphSlice.actions.embedScaleMaxSize({id:id,coordinate:coordinate,scale:scale}))},
-  embedAdded:(id:number,type:string,url:string,maxSizes:Position)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url,maxSizes:maxSizes}))},
-  embedRemoved:(id:number)=>{dispatch(graphSlice.actions.embedRemoved({id:id}))}
+  embedScaleMaxSize: (id: number, coordinate: string, scale: number) => {
+    dispatch(
+      graphSlice.actions.embedScaleMaxSize({
+        id: id,
+        coordinate: coordinate,
+        scale: scale,
+      })
+    );
+  },
+  embedAdded: (id: number, type: string, url: string, maxSizes: Position) => {
+    dispatch(
+      graphSlice.actions.embedAdded({
+        id: id,
+        type: type,
+        url: url,
+        maxSizes: maxSizes,
+      })
+    );
+  },
+  embedRemoved: (id: number) => {
+    dispatch(graphSlice.actions.embedRemoved({ id: id }));
+  },
 });
 
 let frameConnector = connect(mapFrameState,mapFrameDispatch);
@@ -90,7 +135,7 @@ interface FrameProps extends ConnectedProps<typeof frameConnector>{
   frameH:number,
   frameW:number,
   isSelected:boolean,
-  dragCallback:(fromId: number, eventX: number, eventY: number, zoomMultiplier:number) => void,
+  dragCallback:(fromId: number, eventX: number, eventY: number) => void,
   createLinkCallback:(fromId: number) => void,
   popupCallback:(isVisible: boolean, id: number) => void,
   pseudolinkCallback:(id:number,eventPos:Position,state:boolean)=>void
@@ -188,20 +233,14 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  handleHandlers = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
-    this.props.dragCallback(this.props.id,e.pageX,e.pageY,this.props.zoomMultiplier);
+    this.props.dragCallback(this.props.id,e.pageX,e.pageY);
   }
  }
  contentHandlers = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
     if(this.props.editId!==this.props.id){
-      // this.props.effectSetStart('pseudolinkEffect',{x: e.pageX,
-      //   y: e.pageY});
-      // this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX,
-      //   y: e.pageY});
-      // this.props.effectSetId('pseudolinkEffect',this.props.id);
       this.props.pseudolinkCallback(this.props.id,{x: e.pageX,y:e.pageY-_navHeight},true);
-      // this.props.effectSetActive('pseudolinkEffect',true); //todo: 4 actions -> 1 action
     }
   },
   onMouseUpElement:(e:MouseEvent)=>{
@@ -383,10 +422,20 @@ function mapPseudolinkState(state:RootState){
     effectsDataPseudolink: state.overlayEffectsReducer.effects.data.pseudolinkEffect
   }
 }
-const mapPseudolinkDispatch = (dispatch:RootDispatch)=>({
-  linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
-  pseudolinkEffectSetStartFrame:(id:number|null)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetStartFrame({id:id}))},
-  pseudolinkEffectSetEndFrame:(id:number|null)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetEndFrame({id:id}))},
+const mapPseudolinkDispatch = (dispatch: RootDispatch) => ({
+  linkAdded: (frame1: number, frame2: number) => {
+    dispatch(graphSlice.actions.linkAdded({ link: { frame1, frame2 } }));
+  },
+  pseudolinkEffectSetStartFrame: (id: number | null) => {
+    dispatch(
+      overlayEffectsSlice.actions.pseudolinkEffectSetStartFrame({ id: id })
+    );
+  },
+  pseudolinkEffectSetEndFrame: (id: number | null) => {
+    dispatch(
+      overlayEffectsSlice.actions.pseudolinkEffectSetEndFrame({ id: id })
+    );
+  },
 });
 const pseudolinkConnector = connect(mapPseudolinkState,mapPseudolinkDispatch);
 interface pseudolinkProps extends ConnectedProps<typeof pseudolinkConnector>{}
@@ -521,23 +570,70 @@ function mapClickboxState(state:RootState){
     listenerStateScroll: state.listenersStateReducer.scroll
   }
 }
-const mapClickboxDispatch = (dispatch:RootDispatch)=>({
-  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
-  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
-  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
-  effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
-  
-  frameMoved:(id:number,position:Position)=>{dispatch(graphSlice.actions.frameMoved({id:id,position:position}))},
-  framesMovedRelativeSinglePosition:(ids:number[],position:Position)=>{dispatch(graphSlice.actions.framesMovedRelativeSinglePosition({ids:ids,position:position}))},
-  framesMovedRelativeSinglePositionAll:(position:Position)=>{dispatch(graphSlice.actions.framesMovedRelativeSinglePositionAll({position:position}))},
-  
-  dragEffectsClear:()=>{dispatch(overlayEffectsSlice.actions.dragEffectsClear({}))},
-  disableAllEffects:()=>{dispatch(overlayEffectsSlice.actions.disableAllEffects({}))},
-  
-  setZoomMode:(zoomMode:null|boolean)=>{dispatch(zoomSlice.actions.setZoomMode({zoomMode:zoomMode}))},
-  setLastClickPos:(lastClickPos:Position)=>{dispatch(zoomSlice.actions.setPos({lastClickPos:lastClickPos}))},
-  zoomIn:()=>{dispatch(zoomSlice.actions.zoomIn({}))},
-  zoomOut:()=>{dispatch(zoomSlice.actions.zoomOut({}))},
+const mapClickboxDispatch = (dispatch: RootDispatch) => ({
+  frameSetEdit: (id: number | null) => {
+    dispatch(frameEditSlice.actions.frameSetEdit({ id: id }));
+  },
+  effectSetStart: (type: OverlayEffectTypes["types"], startPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetStart({
+        type: type,
+        startPos: startPos,
+      })
+    );
+  },
+  effectSetEnd: (type: OverlayEffectTypes["types"], endPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetEnd({ type: type, endPos: endPos })
+    );
+  },
+  effectSetActive: (type: OverlayEffectTypes["types"], isActive: boolean) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetActive({
+        type: type,
+        isActive: isActive,
+      })
+    );
+  },
+
+  frameMoved: (id: number, position: Position) => {
+    dispatch(graphSlice.actions.frameMoved({ id: id, position: position }));
+  },
+  framesMovedRelativeSinglePosition: (ids: number[], position: Position) => {
+    dispatch(
+      graphSlice.actions.framesMovedRelativeSinglePosition({
+        ids: ids,
+        position: position,
+      })
+    );
+  },
+  framesMovedRelativeSinglePositionAll: (position: Position) => {
+    dispatch(
+      graphSlice.actions.framesMovedRelativeSinglePositionAll({
+        position: position,
+      })
+    );
+  },
+
+  dragEffectsClear: () => {
+    dispatch(overlayEffectsSlice.actions.dragEffectsClear({}));
+  },
+  disableAllEffects: () => {
+    dispatch(overlayEffectsSlice.actions.disableAllEffects({}));
+  },
+
+  setZoomMode: (zoomMode: null | boolean) => {
+    dispatch(zoomSlice.actions.setZoomMode({ zoomMode: zoomMode }));
+  },
+  setLastClickPos: (lastClickPos: Position) => {
+    dispatch(zoomSlice.actions.setPos({ lastClickPos: lastClickPos }));
+  },
+  zoomIn: () => {
+    dispatch(zoomSlice.actions.zoomIn({}));
+  },
+  zoomOut: () => {
+    dispatch(zoomSlice.actions.zoomOut({}));
+  },
 });
 let clickboxConnector = connect(mapClickboxState,mapClickboxDispatch);
 interface ClickboxProps extends ConnectedProps<typeof clickboxConnector>{
@@ -591,7 +687,27 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
                                         );
       }
       if(this.props.effectsDataPseudodrag.isActive){
-        this.props.framesMovedRelativeSinglePosition(this.props.selectedIds,posOp(posOp({x:e.pageX,y:e.pageY},'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),'-',posOp(this.props.effectsDataPseudodrag.startPos,'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier})));
+        let zoomMultiplier = {x: this.props.zoomMultiplier, y: this.props.zoomMultiplier};
+        let currentScroll =  {
+                              x: this.props.appRef.current.scrollLeft,
+                              y: this.props.appRef.current.scrollTop,
+                            }
+        this.props.framesMovedRelativeSinglePosition(
+          this.props.selectedIds,
+          posOp(
+            posOp(
+              posOp({ x: e.pageX, y: e.pageY }, "/", zoomMultiplier),
+              "-",
+              posOp(this.props.effectsDataPseudodrag.startPos, "/", zoomMultiplier)
+            ),
+            "+",
+            posOp(
+              currentScroll,
+              "-",
+              this.props.effectsDataPseudodrag.initScroll
+            )
+          )
+        );
       }
       this.props.disableAllEffects();
       this.props.dragEffectsClear();
@@ -646,12 +762,29 @@ function mapTrackerState(state:RootState){
     zoomMultiplier: state.zoomReducer.zoomMultiplier,
   }
 }
-const mapTrackerDispatch = (dispatch:RootDispatch)=>({
-  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
-  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
-  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
+const mapTrackerDispatch = (dispatch: RootDispatch) => ({
+  frameSetEdit: (id: number | null) => {
+    dispatch(frameEditSlice.actions.frameSetEdit({ id: id }));
+  },
+  effectSetStart: (type: OverlayEffectTypes["types"], startPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetStart({
+        type: type,
+        startPos: startPos,
+      })
+    );
+  },
+  effectSetEnd: (type: OverlayEffectTypes["types"], endPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetEnd({ type: type, endPos: endPos })
+    );
+  },
 
-  framesMoved:(ids:number[],positions:Position[])=>{dispatch(graphSlice.actions.framesMoved({ids:ids,positions:positions}))}
+  framesMoved: (ids: number[], positions: Position[]) => {
+    dispatch(
+      graphSlice.actions.framesMoved({ ids: ids, positions: positions })
+    );
+  },
 });
 let trackerConnector = connect(mapTrackerState,mapTrackerDispatch);
 interface TrackerProps extends ConnectedProps<typeof trackerConnector>{
@@ -662,22 +795,72 @@ class Tracker extends React.Component<TrackerProps,{}>{
     super(props);
   }
   track(e:any,clientOffset:Position){
-    if(this.props.effectsDataAll['pseudolinkEffect'].isActive){
-      this.props.effectSetEnd('pseudolinkEffect',{x: e.pageX+clientOffset.x,
-        y: e.pageY+clientOffset.y});
-    }
-    if(this.props.effectsDataAll['selectionBoxEffect'].isActive){
-      this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX+clientOffset.x,y: e.pageY+clientOffset.y},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
-    }
-    if(this.props.effectsDataAll['pseudodragEffect'].isActive){
-      this.props.effectSetEnd('pseudodragEffect',{x:e.pageX,y:e.pageY});
-    }
-    if(this.props.effectsDataAll['dragEffect'].isActive){
-      let positions:Position[] = []; 
-      this.props.effectsDataAll['dragEffect'].keys.forEach((keyId:number)=>{
-        positions.push(posOp(posOp({x:e.pageX,y:e.pageY},'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),'-',this.props.effectsDataAll.dragEffect.data[keyId].startPos));
+    if (this.props.effectsDataAll["pseudolinkEffect"].isActive) {
+      this.props.effectSetEnd("pseudolinkEffect", {
+        x: e.pageX + clientOffset.x,
+        y: e.pageY + clientOffset.y,
       });
-      this.props.framesMoved(this.props.effectsDataAll['dragEffect'].keys,positions);
+    }
+    if (this.props.effectsDataAll["selectionBoxEffect"].isActive) {
+      this.props.effectSetEnd(
+        "selectionBoxEffect",
+        posOp(
+          { x: e.pageX + clientOffset.x, y: e.pageY + clientOffset.y },
+          "+",
+          {
+            x: this.props.appRef!.current.scrollLeft,
+            y: this.props.appRef!.current.scrollTop,
+          }
+        )
+      );
+    }
+    if (this.props.effectsDataAll["pseudodragEffect"].isActive) {
+      this.props.effectSetEnd(
+        "pseudodragEffect",
+        posOp(
+          { x: e.pageX, y: e.pageY },
+          "+",
+          posOp(
+            {
+              x: this.props.appRef.current.scrollLeft,
+              y: this.props.appRef.current.scrollTop,
+            },
+            "-",
+            this.props.effectsDataAll["pseudodragEffect"].initScroll
+          )
+        )
+      );
+    }
+    if (this.props.effectsDataAll["dragEffect"].isActive) {
+      let positions: Position[] = [];
+      this.props.effectsDataAll["dragEffect"].keys.forEach((keyId: number) => {
+        console.log('init',this.props.effectsDataAll.dragEffect.data[keyId].initScroll);
+        positions.push(
+          posOp(
+            posOp(
+              posOp({ x: e.pageX, y: e.pageY }, "/", {
+                x: this.props.zoomMultiplier,
+                y: this.props.zoomMultiplier,
+              }),
+              "-",
+              this.props.effectsDataAll.dragEffect.data[keyId].startPos
+            ),
+            "+",
+            posOp(
+              {
+                x: this.props.appRef.current.scrollLeft,
+                y: this.props.appRef.current.scrollTop,
+              },
+              "-",
+              this.props.effectsDataAll.dragEffect.data[keyId].initScroll
+            )
+          )
+        );
+      });
+      this.props.framesMoved(
+        this.props.effectsDataAll["dragEffect"].keys,
+        positions
+      );
     }
   }
   onMouseMove=(e:any)=>{
@@ -860,35 +1043,140 @@ function mapAppState(state:RootState){
 
     slowMode: state.overlayEffectsReducer.slowMode,
     zoomMode: state.zoomReducer.zoomMode,
-    zoomMultiplier: state.zoomReducer.zoomMultiplier
+    zoomMultiplier: state.zoomReducer.zoomMultiplier,
+
+    pseudodragActive: state.overlayEffectsReducer.effects.data.pseudodragEffect.isActive
   }
 }
-const mapAppDispatch = (dispatch:RootDispatch)=>({
-  frameAdded:(label:string,embedLink:EmbedData|null,position:Position,size?:Position)=>{dispatch(graphSlice.actions.frameAdded({label:label,embedLink:embedLink,position:position,size:size}))},
-  framesRemoved:(ids:number[])=>{dispatch(graphSlice.actions.framesRemoved({ids:ids}))},
-  linkAdded:(frame1:number,frame2:number)=>{dispatch(graphSlice.actions.linkAdded({link:{frame1,frame2}}))},
-  linkRemoved:(id1:number,id2:number)=>{dispatch(graphSlice.actions.linkRemoved({id1:id1,id2:id2}))},
-  
-  elementsSelected:(ids:number[])=>{dispatch(graphSlice.actions.elementsSelected({ids:ids}))},
-  elementsDeselected:(ids:number[])=>{dispatch(graphSlice.actions.elementsDeselected({ids:ids}))},
-  
-  frameSetEdit:(id:number|null)=>{dispatch(frameEditSlice.actions.frameSetEdit({id:id}))},
+const mapAppDispatch = (dispatch: RootDispatch) => ({
+  frameAdded: (
+    label: string,
+    embedLink: EmbedData | null,
+    position: Position,
+    size?: Position
+  ) => {
+    dispatch(
+      graphSlice.actions.frameAdded({
+        label: label,
+        embedLink: embedLink,
+        position: position,
+        size: size,
+      })
+    );
+  },
+  framesRemoved: (ids: number[]) => {
+    dispatch(graphSlice.actions.framesRemoved({ ids: ids }));
+  },
+  linkAdded: (frame1: number, frame2: number) => {
+    dispatch(graphSlice.actions.linkAdded({ link: { frame1, frame2 } }));
+  },
+  linkRemoved: (id1: number, id2: number) => {
+    dispatch(graphSlice.actions.linkRemoved({ id1: id1, id2: id2 }));
+  },
 
-  effectSetStart:(type:OverlayEffectTypes['types'],startPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetStart({type:type,startPos:startPos}))},
-  effectSetEnd:(type:OverlayEffectTypes['types'],endPos:Position)=>{dispatch(overlayEffectsSlice.actions.effectSetEnd({type:type,endPos:endPos}))},
-  effectSetActive:(type:OverlayEffectTypes['types'],isActive:boolean)=>{dispatch(overlayEffectsSlice.actions.effectSetActive({type:type,isActive:isActive}))},
-  effectSetId:(type:OverlayEffectTypes['types'],id:number)=>{dispatch(overlayEffectsSlice.actions.effectSetId({type:type,id:id}))},
+  elementsSelected: (ids: number[]) => {
+    dispatch(graphSlice.actions.elementsSelected({ ids: ids }));
+  },
+  elementsDeselected: (ids: number[]) => {
+    dispatch(graphSlice.actions.elementsDeselected({ ids: ids }));
+  },
 
-  dragEffectAdded:(id:number,startPos:Position,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectAdded({id:id,startPos:startPos,endPos:endPos}))},
-  dragEffectSetEndPos:(id:number,endPos:Position)=>{dispatch(overlayEffectsSlice.actions.dragEffectSetEndPos({id:id,endPos:endPos}))},
-  pseudodragEffectSetDeltaStart:(delta:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetDeltaStart({delta:delta}))},
-  pseudodragEffectSetDeltaEnd:(delta:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetDeltaEnd({delta:delta}))},
-  pseudodragEffectSetSize:(size:Position)=>{dispatch(overlayEffectsSlice.actions.pseudodragEffectSetSize({size:size}))},
-  pseudolinkEffectSetStartFrame:(id:number)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetStartFrame({id:id}))},
-  pseudolinkEffectSetEndFrame:(id:number)=>{dispatch(overlayEffectsSlice.actions.pseudolinkEffectSetEndFrame({id:id}))},
+  frameSetEdit: (id: number | null) => {
+    dispatch(frameEditSlice.actions.frameSetEdit({ id: id }));
+  },
 
-  embedAdded:(id:number,type:string,url:string,maxSizes:Position)=>{dispatch(graphSlice.actions.embedAdded({id:id,type:type,url:url,maxSizes:maxSizes}))},
-  setZoomMode:(zoomMode:null|boolean)=>{dispatch(zoomSlice.actions.setZoomMode({zoomMode:zoomMode}))}
+  effectSetStart: (type: OverlayEffectTypes["types"], startPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetStart({
+        type: type,
+        startPos: startPos,
+      })
+    );
+  },
+  effectSetEnd: (type: OverlayEffectTypes["types"], endPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetEnd({ type: type, endPos: endPos })
+    );
+  },
+  effectSetActive: (type: OverlayEffectTypes["types"], isActive: boolean) => {
+    dispatch(
+      overlayEffectsSlice.actions.effectSetActive({
+        type: type,
+        isActive: isActive,
+      })
+    );
+  },
+  effectSetId: (type: OverlayEffectTypes["types"], id: number) => {
+    dispatch(overlayEffectsSlice.actions.effectSetId({ type: type, id: id }));
+  },
+
+  dragEffectAdded: (id: number, startPos: Position, endPos: Position,initScroll:Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.dragEffectAdded({
+        id: id,
+        startPos: startPos,
+        endPos: endPos,
+        initScroll: initScroll
+      })
+    );
+  },
+  dragEffectSetEndPos: (id: number, endPos: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.dragEffectSetEndPos({
+        id: id,
+        endPos: endPos,
+      })
+    );
+  },
+  pseudodragEffectSetDeltaStart: (delta: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.pseudodragEffectSetDeltaStart({
+        delta: delta,
+      })
+    );
+  },
+  pseudodragEffectSetDeltaEnd: (delta: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.pseudodragEffectSetDeltaEnd({ delta: delta })
+    );
+  },
+  pseudodragEffectSetSize: (size: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.pseudodragEffectSetSize({ size: size })
+    );
+  },
+  pseudodragEffectSetInitialScroll: (initScroll: Position) => {
+    dispatch(
+      overlayEffectsSlice.actions.pseudodragEffectSetInitialScroll({
+        initScroll: initScroll,
+      })
+    );
+  },
+
+  pseudolinkEffectSetStartFrame: (id: number) => {
+    dispatch(
+      overlayEffectsSlice.actions.pseudolinkEffectSetStartFrame({ id: id })
+    );
+  },
+  pseudolinkEffectSetEndFrame: (id: number) => {
+    dispatch(
+      overlayEffectsSlice.actions.pseudolinkEffectSetEndFrame({ id: id })
+    );
+  },
+
+  embedAdded: (id: number, type: string, url: string, maxSizes: Position) => {
+    dispatch(
+      graphSlice.actions.embedAdded({
+        id: id,
+        type: type,
+        url: url,
+        maxSizes: maxSizes,
+      })
+    );
+  },
+  setZoomMode: (zoomMode: null | boolean) => {
+    dispatch(zoomSlice.actions.setZoomMode({ zoomMode: zoomMode }));
+  },
 });
 let appConnector = connect(mapAppState,mapAppDispatch);
 interface AppProps extends  ConnectedProps<typeof appConnector>{
@@ -1033,6 +1321,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   }
   componentWillUnmount(){
     document.addEventListener('keydown',this.globalHandlers.onKeyDown);
+    
+    
   }
   createLinkCallback=(fromId:number)=>{
     this.props.pseudolinkEffectSetEndFrame(fromId);
@@ -1053,7 +1343,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     }
   }
   //drag
-  dragCallback=(fromId:number,eventXarg:number,eventYarg:number,zoomMultiplier:number)=>{
+  dragCallback=(fromId:number,eventXarg:number,eventYarg:number)=>{
     let eventX = eventXarg/this.props.zoomMultiplier;
     let eventY = eventYarg/this.props.zoomMultiplier;
         if(this.props.selectedIds.length>0){
@@ -1078,6 +1368,9 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
           let borderBottomRight = posOp({x:max_x,y:max_y},'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier});
   
           this.props.effectSetStart('pseudodragEffect',{x:eventXarg,y:eventYarg});
+          this.props.pseudodragEffectSetInitialScroll({x:this.props.appRef.current.scrollLeft, 
+                                                       y:this.props.appRef.current.scrollTop}
+                                                      );
           this.props.effectSetEnd('pseudodragEffect',{x:eventXarg,y: eventYarg});
           this.props.pseudodragEffectSetDeltaStart(posOp({x:eventX,y:eventY},'-',{x:borderTopLeft.x,y:borderTopLeft.y}));
           this.props.pseudodragEffectSetDeltaEnd(posOp({x:borderBottomRight.x,y:borderBottomRight.y},'-',{x:eventX,y:eventY}));
@@ -1085,9 +1378,18 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
          this.props.effectSetActive('pseudodragEffect',true); 
         } else {
           //single element drag
-            this.props.dragEffectAdded(fromId,
-              {x:eventX-this.props.framesData[fromId].position.x,y:eventY-this.props.framesData[fromId].position.y}, 
-              {x:eventX,y:eventY});
+            this.props.dragEffectAdded(
+              fromId,
+              {
+                x: eventX - this.props.framesData[fromId].position.x,
+                y: eventY - this.props.framesData[fromId].position.y,
+              },
+              { x: eventX, y: eventY },
+              {
+                x: this.props.appRef.current.scrollLeft,
+                y: this.props.appRef.current.scrollTop,
+              }
+            );
             this.props.effectSetActive('dragEffect',true); 
         }   
   }

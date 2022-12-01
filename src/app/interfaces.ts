@@ -123,6 +123,7 @@ interface OverlayEffectPayload{
 
    delta?:Position,
    size?:Position,
+   initScroll?:Position,
    ids?:number[]
 }
 interface Action{

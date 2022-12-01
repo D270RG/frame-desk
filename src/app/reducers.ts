@@ -59,7 +59,8 @@ const overlayEffectsInitialState = {
           deltaEnd:{x:0,y:0},
           size:{x:0,y:0},
           startPos:{x:0,y:0},
-          endPos:{x:0,y:0}
+          endPos:{x:0,y:0},
+          initScroll:{x:0,y:0}
         },
         selectionBoxEffect:{
           isActive:false,
@@ -70,7 +71,8 @@ const overlayEffectsInitialState = {
           data:{
             // 0:{
             //   startPos:{x:0,y:0},
-            //   endPos:{x:0,y:0}
+            //   endPos:{x:0,y:0},
+            //   initScroll:{x:0,y:0}
             // }
           },
             keys:[/*0*/]
@@ -141,10 +143,14 @@ const overlayEffectsSlice = createSlice({
     pseudodragEffectSetDeltaEnd:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data['pseudodragEffect'].deltaEnd = action.payload.delta
     },
+    pseudodragEffectSetInitialScroll:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['pseudodragEffect'].initScroll = action.payload.initScroll
+    },
     dragEffectAdded:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data['dragEffect'].data[action.payload.id as number] = {
         startPos:action.payload.startPos,
-        endPos:action.payload.endPos
+        endPos:action.payload.endPos,
+        initScroll:action.payload.initScroll
       }
       state.effects!.data['dragEffect'].keys.push(action.payload.id as number);
     },
@@ -153,6 +159,9 @@ const overlayEffectsSlice = createSlice({
     },
     dragEffectSetStartPos:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data['dragEffect'].data[action.payload.id as number].endPos = action.payload.endPos
+    },
+    dragEffectSetInitialScroll:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['dragEffect'].data[action.payload.id as number].initScroll = action.payload.initScroll
     },
     dragEffectsClear:(state, action:PayloadAction<OverlayEffectPayload>)=>{
       state.effects!.data['dragEffect'].keys.length = 0;
