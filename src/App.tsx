@@ -90,7 +90,7 @@ interface FrameProps extends ConnectedProps<typeof frameConnector>{
   frameH:number,
   frameW:number,
   isSelected:boolean,
-  dragCallback:(fromId: number, eventX: number, eventY: number) => void,
+  dragCallback:(fromId: number, eventX: number, eventY: number, zoomMultiplier:number) => void,
   createLinkCallback:(fromId: number) => void,
   popupCallback:(isVisible: boolean, id: number) => void,
   pseudolinkCallback:(id:number,eventPos:Position,state:boolean)=>void
@@ -188,7 +188,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  handleHandlers = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
-    this.props.dragCallback(this.props.id,e.pageX,e.pageY);
+    this.props.dragCallback(this.props.id,e.pageX,e.pageY,this.props.zoomMultiplier);
   }
  }
  contentHandlers = {
@@ -552,37 +552,6 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
   constructor(props:any){
     super(props);
   }
-  // zoomMovement(mode:string,zoomPos:Position){
-  //   let coef = Math.sqrt(Math.pow(0.1,2)+Math.pow(0.1,2));
-  //   this.props.framesKeys.forEach((id:number)=>{
-  //     let pos = this.props.framesData[id].position;
-  //     let center = zoomPos;
-  //     let delta = posOp(pos,'-',center);
-  //     let change = {x:Math.abs(delta.x)*coef,y:Math.abs(delta.y)*coef};
-  //     if(delta.x<0 && delta.y<0){
-  //       change = posOp(change,'*',{x:-1,y:-1});
-  //     }
-  //     if(delta.x>0 && delta.y>0){
-  //      //default
-  //     }
-  //     if(delta.x<0 && delta.y>0){
-  //       change = posOp(change,'*',{x:-1,y:1});
-  //     }
-  //     if(delta.x>0 && delta.y<0){
-  //       change = posOp(change,'*',{x:1,y:-1});
-  //     }
-  //     switch(mode){
-  //       case 'in':{
-  //         this.props.frameMoved(id,posOp(pos,'+',change));
-  //         break;
-  //       }
-  //       case 'out':{
-  //         this.props.frameMoved(id,posOp(pos,'-',change));
-  //         break;
-  //       }
-  //     }
-  //   })
-  // }
   clickboxHandlers={
     onMouseDown:(e: any)=>{
         if (e.button === 0){
@@ -622,7 +591,7 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
                                         );
       }
       if(this.props.effectsDataPseudodrag.isActive){
-        this.props.framesMovedRelativeSinglePosition(this.props.selectedIds,posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataPseudodrag.startPos));
+        this.props.framesMovedRelativeSinglePosition(this.props.selectedIds,posOp(posOp({x:e.pageX,y:e.pageY},'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),'-',posOp(this.props.effectsDataPseudodrag.startPos,'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier})));
       }
       this.props.disableAllEffects();
       this.props.dragEffectsClear();
@@ -701,13 +670,12 @@ class Tracker extends React.Component<TrackerProps,{}>{
       this.props.effectSetEnd('selectionBoxEffect',posOp({x: e.pageX+clientOffset.x,y: e.pageY+clientOffset.y},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
     }
     if(this.props.effectsDataAll['pseudodragEffect'].isActive){
-      this.props.effectSetEnd('pseudodragEffect',{x: e.pageX,
-        y: e.pageY});
+      this.props.effectSetEnd('pseudodragEffect',{x:e.pageX,y:e.pageY});
     }
     if(this.props.effectsDataAll['dragEffect'].isActive){
       let positions:Position[] = []; 
       this.props.effectsDataAll['dragEffect'].keys.forEach((keyId:number)=>{
-        positions.push(posOp({x:e.pageX,y:e.pageY},'-',this.props.effectsDataAll.dragEffect.data[keyId].startPos));
+        positions.push(posOp(posOp({x:e.pageX,y:e.pageY},'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),'-',this.props.effectsDataAll.dragEffect.data[keyId].startPos));
       });
       this.props.framesMoved(this.props.effectsDataAll['dragEffect'].keys,positions);
     }
@@ -855,9 +823,23 @@ class PseudodragBox extends React.Component<PseudodragBoxProps,{}>{
       <div style={{position:'absolute',pointerEvents:'none'}}>
         {this.props.effectsDataPseudodrag.isActive &&
           <svg style={{position:'absolute',overflow:'visible',pointerEvents:'none',zIndex:this.props.zIndex}}>
-              {this.createSelectionRectangle(posOp(this.props.effectsDataPseudodrag.endPos,'-',this.props.effectsDataPseudodrag.deltaStart),
-                                            posOp(this.props.effectsDataPseudodrag.endPos,'+',this.props.effectsDataPseudodrag.deltaEnd))
+              {this.createSelectionRectangle(
+                                            posOp(this.props.effectsDataPseudodrag.endPos,
+                                              '-',
+                                              posOp(this.props.effectsDataPseudodrag.deltaStart,
+                                                '*',
+                                                {x:this.props.zoomMultiplier,y:this.props.zoomMultiplier})),
+
+                                            posOp(this.props.effectsDataPseudodrag.endPos,
+                                              '+',
+                                              posOp(this.props.effectsDataPseudodrag.deltaEnd,
+                                                '*',
+                                                {x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}))
+                                            )
               }
+              {/* {this.createSelectionRectangle(this.props.effectsDataPseudodrag.startPos,
+                             this.props.effectsDataPseudodrag.endPos)
+              } */}
           </svg>
         }
       </div>
@@ -1071,36 +1053,34 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     }
   }
   //drag
-  dragCallback=(fromId:number,eventX:number,eventY:number)=>{
-    if(this.props.slowMode){
+  dragCallback=(fromId:number,eventXarg:number,eventYarg:number,zoomMultiplier:number)=>{
+    let eventX = eventXarg/this.props.zoomMultiplier;
+    let eventY = eventYarg/this.props.zoomMultiplier;
         if(this.props.selectedIds.length>0){
           let max_x=0;
           let max_y=0;
           let min_x=999999;
           let min_y=999999;
-  
           this.props.selectedIds.forEach((selectedId:number)=>{
-            let topLeft = {
-                            x:this.props.framesData[selectedId].position.x,
-                            y:this.props.framesData[selectedId].position.y
-                          }
-            let bottomRight = {
-                                x:this.props.framesData[selectedId].position.x+this.props.framesData[selectedId].size.x,
-                                y:this.props.framesData[selectedId].position.y+this.props.framesData[selectedId].size.y
-                              }
+            let topLeft = this.props.framesData[selectedId].position;
+
+            let bottomRight = posOp(
+                                posOp(this.props.framesData[selectedId].position,'*',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),
+                                '+',
+                                this.props.framesData[selectedId].size
+                              )   
             if(bottomRight.x > max_x){max_x=bottomRight.x};
             if(bottomRight.y > max_y){max_y=bottomRight.y};
             if(topLeft.x < min_x){min_x=topLeft.x};
             if(topLeft.y < min_y){min_y=topLeft.y};
           });
           let borderTopLeft = {x:min_x,y:min_y};
-          let borderBottomRight = {x:max_x,y:max_y};
+          let borderBottomRight = posOp({x:max_x,y:max_y},'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier});
   
-          this.props.effectSetStart('pseudodragEffect',{x:eventX,y:eventY});
-          this.props.effectSetEnd('pseudodragEffect',{x:eventX,y: eventY});
+          this.props.effectSetStart('pseudodragEffect',{x:eventXarg,y:eventYarg});
+          this.props.effectSetEnd('pseudodragEffect',{x:eventXarg,y: eventYarg});
           this.props.pseudodragEffectSetDeltaStart(posOp({x:eventX,y:eventY},'-',{x:borderTopLeft.x,y:borderTopLeft.y}));
           this.props.pseudodragEffectSetDeltaEnd(posOp({x:borderBottomRight.x,y:borderBottomRight.y},'-',{x:eventX,y:eventY}));
-          this.props.pseudodragEffectSetSize({x:borderBottomRight.x-borderTopLeft.x,y:borderBottomRight.y-borderTopLeft.y});
   
          this.props.effectSetActive('pseudodragEffect',true); 
         } else {
@@ -1110,27 +1090,8 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
               {x:eventX,y:eventY});
             this.props.effectSetActive('dragEffect',true); 
         }   
-    } else {
-    //no slow mode
-      if(this.props.selectedIds.includes(fromId)){
-        this.props.selectedIds.forEach((selectedId:number)=>{
-          this.props.dragEffectAdded(selectedId,
-                    {x:eventX-this.props.framesData[selectedId].position.x,y:eventY-this.props.framesData[selectedId].position.y}, 
-                    {x:eventX,y:eventY});
-          });
-      } else {
-        this.props.dragEffectAdded(fromId,
-          {x:eventX-this.props.framesData[fromId].position.x,y:eventY-this.props.framesData[fromId].position.y}, 
-          {x:eventX,y:eventY});
-      }
-      this.props.effectSetActive('dragEffect',true); 
-    }
   }
   pseudoLinkCallback=(id:number,eventPos:Position,state:boolean)=>{
-        // x1={this.props.position.x+this.props.size.x/2} 
-        // y1={this.props.position.y+this.props.size.y/2} 
-        // x2={this.props.effectsDataPseudolink.endPos!.x} 
-        // y2={this.props.effectsDataPseudolink.endPos!.y} 
       this.props.effectSetStart('pseudolinkEffect',{x: eventPos.x,
         y: eventPos.y});
       this.props.effectSetEnd('pseudolinkEffect',{x: eventPos.x,
