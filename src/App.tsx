@@ -642,11 +642,12 @@ interface ClickboxProps extends ConnectedProps<typeof clickboxConnector>{
   zIndex:number,
   appRef:React.RefObject<any>
 }
-class Clickbox extends React.Component<ClickboxProps,{}>{
+class Clickbox extends React.Component<ClickboxProps,{cursorStyle:string}>{
   selectionBoxRef = React.createRef<HTMLDivElement>();
   clickboxRef = React.createRef<HTMLDivElement>();
   constructor(props:any){
     super(props);
+    this.state ={cursorStyle:'default'}
   }
   clickboxHandlers={
     onMouseDown:(e: any)=>{
@@ -725,11 +726,29 @@ class Clickbox extends React.Component<ClickboxProps,{}>{
     (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
    
   }
+  componentDidUpdate(prevProps:ClickboxProps){
+    if(prevProps.zoomMode!==this.props.zoomMode){
+      if(this.props.zoomMode===null){
+        this.setState({cursorStyle:'default'});
+      } else {
+        if(this.props.zoomMode){
+          this.setState({cursorStyle:'zoom-in'})
+        } else {
+          this.setState({cursorStyle:'zoom-out'})
+        }
+      }
+    }
+  }
   render(){
     return(
       //100-horizontal squares amount, 50-vertical squares amount, TODO: prevent overflow
-      <div className={'clickbox'} ref={this.clickboxRef} style={{zIndex:this.props.zIndex,position:'absolute',overflow:'hidden',
-        width:100*100*this.props.zoomMultiplier,height:100*50*this.props.zoomMultiplier}}>
+      <div className={'clickbox'} ref={this.clickboxRef} 
+           style={{
+              zIndex:this.props.zIndex,position:'absolute',
+              overflow:'hidden',
+              cursor:this.state.cursorStyle,
+              width:100*100*this.props.zoomMultiplier,
+              height:100*50*this.props.zoomMultiplier}}>
         <div style={{width:'100%',height:'100%',
                      position:'absolute'
                     }}>
@@ -834,7 +853,6 @@ class Tracker extends React.Component<TrackerProps,{}>{
     if (this.props.effectsDataAll["dragEffect"].isActive) {
       let positions: Position[] = [];
       this.props.effectsDataAll["dragEffect"].keys.forEach((keyId: number) => {
-        console.log('init',this.props.effectsDataAll.dragEffect.data[keyId].initScroll);
         positions.push(
           posOp(
             posOp(
