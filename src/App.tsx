@@ -1,7 +1,7 @@
 import React, {MouseEvent} from 'react';
 import './App.scss';
 import styles from './App.scss';  
-import {connect, MapStateToPropsParam,ConnectedProps} from 'react-redux'
+import {connect, MapStateToPropsParam,ConnectedProps, batch} from 'react-redux'
 import {listenersStateSlice,zoomSlice,graphSlice,frameEditSlice,overlayEffectsSlice} from './app/reducers';
 import {LinkType,Position,FrameType,FrameElement,EffectType,OverlayEffectTypes,OverlayEffectPayload,EmbedData} from './app/interfaces'
 import { throttle } from 'throttle-typescript';
@@ -445,8 +445,10 @@ class Pseudolink extends React.Component<pseudolinkProps,{}>{
       && this.props.effectsDataPseudolink.endFrame!==undefined && this.props.effectsDataPseudolink.startFrame!==undefined
       && this.props.effectsDataPseudolink.endFrame!==null && this.props.effectsDataPseudolink.startFrame!==null){
         this.props.linkAdded(this.props.effectsDataPseudolink.startFrame,this.props.effectsDataPseudolink.endFrame);
-        this.props.pseudolinkEffectSetStartFrame(null);
-        this.props.pseudolinkEffectSetEndFrame(null);
+        batch(()=>{
+          this.props.pseudolinkEffectSetStartFrame(null);
+          this.props.pseudolinkEffectSetEndFrame(null);
+        });
       }
     return true;
   }
@@ -656,9 +658,11 @@ class Clickbox extends React.Component<ClickboxProps,{cursorStyle:string}>{
             this.props.frameSetEdit(null);
           } else {
             if(this.props.zoomMode===null){
-              this.props.effectSetStart('selectionBoxEffect',posOp({x:e.pageX,y:e.pageY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
-              this.props.effectSetEnd('selectionBoxEffect',posOp({x:e.pageX,y: e.pageY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
-              this.props.effectSetActive('selectionBoxEffect',true);
+              batch(()=>{
+                this.props.effectSetStart('selectionBoxEffect',posOp({x:e.pageX,y:e.pageY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+                this.props.effectSetEnd('selectionBoxEffect',posOp({x:e.pageX,y: e.pageY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+                this.props.effectSetActive('selectionBoxEffect',true);
+              });
             } else {
               //true - zoomIn, false - zoomOut
               this.props.setLastClickPos({x:e.clientX,y:e.clientY});
@@ -815,10 +819,15 @@ class Tracker extends React.Component<TrackerProps,{}>{
   }
   track(e:any,clientOffset:Position){
     if (this.props.effectsDataAll["pseudolinkEffect"].isActive) {
-      this.props.effectSetEnd("pseudolinkEffect", {
-        x: e.pageX + clientOffset.x,
-        y: e.pageY + clientOffset.y,
-      });
+      this.props.effectSetEnd("pseudolinkEffect", 
+      posOp(
+        { x: e.pageX, y: e.pageY-_navHeight },
+        "+",
+          {
+            x: this.props.appRef.current.scrollLeft,
+            y: this.props.appRef.current.scrollTop,
+          }  
+      ));
     }
     if (this.props.effectsDataAll["selectionBoxEffect"].isActive) {
       this.props.effectSetEnd(
@@ -1364,61 +1373,73 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
   dragCallback=(fromId:number,eventXarg:number,eventYarg:number)=>{
     let eventX = eventXarg/this.props.zoomMultiplier;
     let eventY = eventYarg/this.props.zoomMultiplier;
-        if(this.props.selectedIds.length>0){
-          let max_x=0;
-          let max_y=0;
-          let min_x=999999;
-          let min_y=999999;
-          this.props.selectedIds.forEach((selectedId:number)=>{
-            let topLeft = this.props.framesData[selectedId].position;
+    if(this.props.selectedIds.includes(fromId)){
+      let max_x=0;
+      let max_y=0;
+      let min_x=999999;
+      let min_y=999999;
+      this.props.selectedIds.forEach((selectedId:number)=>{
+        let topLeft = this.props.framesData[selectedId].position;
 
-            let bottomRight = posOp(
-                                posOp(this.props.framesData[selectedId].position,'*',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),
-                                '+',
-                                this.props.framesData[selectedId].size
-                              )   
-            if(bottomRight.x > max_x){max_x=bottomRight.x};
-            if(bottomRight.y > max_y){max_y=bottomRight.y};
-            if(topLeft.x < min_x){min_x=topLeft.x};
-            if(topLeft.y < min_y){min_y=topLeft.y};
-          });
-          let borderTopLeft = {x:min_x,y:min_y};
-          let borderBottomRight = posOp({x:max_x,y:max_y},'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier});
-  
-          this.props.effectSetStart('pseudodragEffect',{x:eventXarg,y:eventYarg});
-          this.props.pseudodragEffectSetInitialScroll({x:this.props.appRef.current.scrollLeft, 
-                                                       y:this.props.appRef.current.scrollTop}
-                                                      );
-          this.props.effectSetEnd('pseudodragEffect',{x:eventXarg,y: eventYarg});
-          this.props.pseudodragEffectSetDeltaStart(posOp({x:eventX,y:eventY},'-',{x:borderTopLeft.x,y:borderTopLeft.y}));
-          this.props.pseudodragEffectSetDeltaEnd(posOp({x:borderBottomRight.x,y:borderBottomRight.y},'-',{x:eventX,y:eventY}));
-  
-         this.props.effectSetActive('pseudodragEffect',true); 
-        } else {
-          //single element drag
-            this.props.dragEffectAdded(
-              fromId,
-              {
-                x: eventX - this.props.framesData[fromId].position.x,
-                y: eventY - this.props.framesData[fromId].position.y,
-              },
-              { x: eventX, y: eventY },
-              {
-                x: this.props.appRef.current.scrollLeft,
-                y: this.props.appRef.current.scrollTop,
-              }
-            );
-            this.props.effectSetActive('dragEffect',true); 
-        }   
+        let bottomRight = posOp(
+                            posOp(this.props.framesData[selectedId].position,'*',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),
+                            '+',
+                            this.props.framesData[selectedId].size
+                          )   
+        if(bottomRight.x > max_x){max_x=bottomRight.x};
+        if(bottomRight.y > max_y){max_y=bottomRight.y};
+        if(topLeft.x < min_x){min_x=topLeft.x};
+        if(topLeft.y < min_y){min_y=topLeft.y};
+      });
+      let borderTopLeft = {x:min_x,y:min_y};
+      let borderBottomRight = posOp({x:max_x,y:max_y},'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier});
+      
+      batch(()=>{
+        this.props.effectSetStart('pseudodragEffect',{x:eventXarg,y:eventYarg});
+        this.props.pseudodragEffectSetInitialScroll({x:this.props.appRef.current.scrollLeft, 
+                                                      y:this.props.appRef.current.scrollTop}
+                                                    );
+        this.props.effectSetEnd('pseudodragEffect',{x:eventXarg,y: eventYarg});
+        this.props.pseudodragEffectSetDeltaStart(posOp({x:eventX,y:eventY},'-',{x:borderTopLeft.x,y:borderTopLeft.y}));
+        this.props.pseudodragEffectSetDeltaEnd(posOp({x:borderBottomRight.x,y:borderBottomRight.y},'-',{x:eventX,y:eventY}));
+      });
+
+      this.props.effectSetActive('pseudodragEffect',true); 
+    } else {
+      //single element drag
+        this.props.dragEffectAdded(
+          fromId,
+          {
+            x: eventX - this.props.framesData[fromId].position.x,
+            y: eventY - this.props.framesData[fromId].position.y,
+          },
+          { x: eventX, y: eventY },
+          {
+            x: this.props.appRef.current.scrollLeft,
+            y: this.props.appRef.current.scrollTop,
+          }
+        );
+        this.props.effectSetActive('dragEffect',true); 
+    }   
   }
   pseudoLinkCallback=(id:number,eventPos:Position,state:boolean)=>{
-      this.props.effectSetStart('pseudolinkEffect',{x: eventPos.x,
-        y: eventPos.y});
-      this.props.effectSetEnd('pseudolinkEffect',{x: eventPos.x,
-        y: eventPos.y});
-      this.props.effectSetId('pseudolinkEffect',id);
-      this.props.pseudolinkEffectSetStartFrame(id);
-      this.props.effectSetActive('pseudolinkEffect',state); 
+      let scrollAmount = {
+        x: this.props.appRef.current.scrollLeft,
+        y: this.props.appRef.current.scrollTop,
+      };
+      batch(()=>{
+        this.props.effectSetStart(
+          "pseudolinkEffect",
+          posOp({ x: eventPos.x, y: eventPos.y }, "+", scrollAmount)
+        );
+        this.props.effectSetEnd(
+          "pseudolinkEffect",
+          posOp({ x: eventPos.x, y: eventPos.y }, "+", scrollAmount)
+        );
+        this.props.effectSetId("pseudolinkEffect", id);
+        this.props.pseudolinkEffectSetStartFrame(id);
+        this.props.effectSetActive("pseudolinkEffect", state); 
+      });
   }
   popupCallback=(isVisible:boolean,id:number)=>{
     this.setState({popupView:isVisible,popupId:id});

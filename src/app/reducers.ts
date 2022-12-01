@@ -51,7 +51,8 @@ const overlayEffectsInitialState = {
           startFrame:null,
           endFrame:null,
           startPos:{x:0,y:0},
-          endPos:{x:0,y:0}
+          endPos:{x:0,y:0},
+          initScroll:{x:0,y:0}
         },
         pseudodragEffect:{
           isActive:false,
