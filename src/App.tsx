@@ -205,38 +205,28 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
       if(this.props.embedLink.maxSizes!==null) this.setState({maxTextWidth:this.props.embedLink.maxSizes.x});
     }
     //handle box binding
-    // (this.handleRef.current)!.addEventListener('mouseup', this.handleHandlers.onMouseUp);
-    (this.handleRef.current)!.addEventListener('mousedown', this.handleHandlers.onMouseDown);
-
+    (this.handleRef.current)!.addEventListener('mousedown', this.handleHandlersDesktop.onMouseDown);
+    (this.handleRef.current)!.addEventListener('touchstart', this.handleHandlersMobile.onMouseDown,{passive: false});
     //content box binding
-    (this.contentRef.current)!.addEventListener('mouseup', this.contentHandlers.onMouseUpElement);
-    (this.contentRef.current)!.addEventListener('mousedown', this.contentHandlers.onMouseDown);
+    (this.contentRef.current)!.addEventListener('mouseup', this.contentHandlersDesktop.onMouseUpElement);
+    (this.contentRef.current)!.addEventListener('mousedown', this.contentHandlersDesktop.onMouseDown);
+
+    (this.contentRef.current)!.addEventListener('touchend', this.contentHandlersMobile.onMouseUpElement,{passive: true});
+    (this.contentRef.current)!.addEventListener('touchstart', this.contentHandlersMobile.onMouseDown,{passive: false});
 
     //wrap box binding
     (this.wrapRef.current)!.addEventListener('dblclick', this.wrapHandlers.onDoubleClick);
 
     this.resize(null);
  }
- componentWillUnmount(){
-  //handle box unbinding
-  // (this.handleRef.current)!.removeEventListener('mouseup', this.handleHandlers.onMouseUp);
-  (this.handleRef.current)!.removeEventListener('mousedown', this.handleHandlers.onMouseDown);
-
-  //content box unbinding
-  (this.contentRef.current)!.removeEventListener('mouseup', this.contentHandlers.onMouseUpElement);
-  (this.contentRef.current)!.removeEventListener('mousedown', this.contentHandlers.onMouseDown);
-
-  //wrap box unbinding
-  (this.wrapRef.current)!.removeEventListener('dblclick', this.wrapHandlers.onDoubleClick);
-
- }
- handleHandlers = {
+ //desktop
+ handleHandlersDesktop = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
     this.props.dragCallback(this.props.id,e.pageX,e.pageY);
   }
  }
- contentHandlers = {
+ contentHandlersDesktop = {
   onMouseDown:(e:MouseEvent)=>{
     if (e.button !== 0) return
     if(this.props.editId!==this.props.id){
@@ -248,6 +238,28 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
     this.props.createLinkCallback(this.props.id);
   }
  }
+ //mobile
+ handleHandlersMobile = {
+  onMouseDown:(e:TouchEvent)=>{
+    e.preventDefault();
+    console.log('mobileStartDrag',e.changedTouches[0].pageX,e.changedTouches[0].pageY);
+    this.props.dragCallback(this.props.id,e.changedTouches[0].pageX,e.changedTouches[0].pageY);
+  }
+ }
+ contentHandlersMobile = {
+  onMouseDown:(e:TouchEvent)=>{
+    e.preventDefault();
+    if(this.props.editId!==this.props.id){
+      console.log('mobileStartPseudolink');
+      this.props.pseudolinkCallback(this.props.id,{x: e.changedTouches[0].pageX,y:e.changedTouches[0].pageY-_navHeight},true);
+    }
+  },
+  onMouseUpElement:(e:TouchEvent)=>{
+    console.log('mobileCreateLink');
+    this.props.createLinkCallback(this.props.id);
+  }
+ }
+ //universal
  wrapHandlers = {
     onDoubleClick:(e:MouseEvent)=>{
       if(this.props.editId===null){
@@ -651,84 +663,100 @@ class Clickbox extends React.Component<ClickboxProps,{cursorStyle:string}>{
     super(props);
     this.state ={cursorStyle:'default'}
   }
-  clickboxHandlers={
-    onMouseDown:(e: any)=>{
-        if (e.button === 0){
-          if(this.props.editId!==null){
-            this.props.frameSetEdit(null);
+  //tracker listeners
+  mouseDown=(eventX:number,eventY:number,offsetX:number,offsetY:number,unlocker:boolean)=>{
+    if (unlocker){
+      if(this.props.editId!==null){
+        this.props.frameSetEdit(null);
+      } else {
+        if(this.props.zoomMode===null){
+          batch(()=>{
+            this.props.effectSetStart('selectionBoxEffect',posOp({x:eventX,y:eventY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+            this.props.effectSetEnd('selectionBoxEffect',posOp({x:eventX,y:eventY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
+            this.props.effectSetActive('selectionBoxEffect',true);
+          });
+        } else {
+          //true - zoomIn, false - zoomOut
+          this.props.setLastClickPos({x:eventX,y:eventY});
+          let distance = Math.sqrt(Math.pow(offsetX,2)+Math.pow(offsetY,2)); 
+          let delta = {x:Math.cos(Math.atan((offsetY)/offsetX))*distance*0.1,
+                       y:Math.sin(Math.atan((offsetY)/offsetX))*distance*0.1}
+          if(this.props.zoomMode){
+            if(this.props.zoomMultiplier<(1+0.1*6)){
+              this.props.appRef.current.scrollBy(delta.x,delta.y); 
+              this.props.zoomIn();
+            }
           } else {
-            if(this.props.zoomMode===null){
-              batch(()=>{
-                this.props.effectSetStart('selectionBoxEffect',posOp({x:e.pageX,y:e.pageY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
-                this.props.effectSetEnd('selectionBoxEffect',posOp({x:e.pageX,y: e.pageY-_navHeight},'+',{x:this.props.appRef!.current.scrollLeft,y:this.props.appRef!.current.scrollTop}));
-                this.props.effectSetActive('selectionBoxEffect',true);
-              });
-            } else {
-              //true - zoomIn, false - zoomOut
-              this.props.setLastClickPos({x:e.clientX,y:e.clientY});
-              let distance = Math.sqrt(Math.pow(e.offsetX,2)+Math.pow(e.offsetY,2)); 
-              let delta = {x:Math.cos(Math.atan((e.offsetY)/e.offsetX))*distance*0.1,
-                           y:Math.sin(Math.atan((e.offsetY)/e.offsetX))*distance*0.1}
-              if(this.props.zoomMode){
-                if(this.props.zoomMultiplier<(1+0.1*6)){
-                  this.props.appRef.current.scrollBy(delta.x,delta.y); 
-                  this.props.zoomIn();
-                }
-              } else {
-                if(this.props.zoomMultiplier>(1-0.1*8)){
-                  this.props.appRef.current.scrollBy(-delta.x,-delta.y); 
-                  this.props.zoomOut();
-                }
-              }
+            if(this.props.zoomMultiplier>(1-0.1*8)){
+              this.props.appRef.current.scrollBy(-delta.x,-delta.y); 
+              this.props.zoomOut();
             }
           }
         }
-      },
-    onMouseUp:(e:any)=>{
-      if(this.props.effectsDataSelectionBox.isActive){ //todo: unlink effects isActive from positions to fix redundant clickbox redraw
-        this.props.areaSelectionCallback(
-                                         posOp(this.props.effectsDataSelectionBox.startPos,'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),
-                                         posOp(this.props.effectsDataSelectionBox.endPos,'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier})
-                                        );
       }
-      if(this.props.effectsDataPseudodrag.isActive){
-        let zoomMultiplier = {x: this.props.zoomMultiplier, y: this.props.zoomMultiplier};
-        let currentScroll =  {
-                              x: this.props.appRef.current.scrollLeft,
-                              y: this.props.appRef.current.scrollTop,
-                            }
-        this.props.framesMovedRelativeSinglePosition(
-          this.props.selectedIds,
-          posOp(
-            posOp(
-              posOp({ x: e.pageX, y: e.pageY }, "/", zoomMultiplier),
-              "-",
-              posOp(this.props.effectsDataPseudodrag.startPos, "/", zoomMultiplier)
-            ),
-            "+",
-            posOp(
-              currentScroll,
-              "-",
-              this.props.effectsDataPseudodrag.initScroll
-            )
-          )
-        );
-      }
-      this.props.disableAllEffects();
-      this.props.dragEffectsClear();
     }
-   }
-   componentDidMount(){
-    // (this.clickboxRef.current)!.addEventListener('scroll', this.clickboxHandlers.onScroll);
-    (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-    // document.addEventListener('wheel', this.clickboxHandlers.onScroll);
-    document.addEventListener('mouseup', this.clickboxHandlers.onMouseUp);
-    
   }
-  componentWillUnmount(){
-    // (this.clickboxRef.current)!.removeEventListener('scroll', this.clickboxHandlers.onScroll);
-    (this.clickboxRef.current)!.removeEventListener('mousedown', this.clickboxHandlers.onMouseDown);
-   
+mouseUp=(eventX:number,eventY:number)=>{
+  if(this.props.effectsDataSelectionBox.isActive){ //todo: unlink effects isActive from positions to fix redundant clickbox redraw
+    this.props.areaSelectionCallback(
+                                     posOp(this.props.effectsDataSelectionBox.startPos,'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier}),
+                                     posOp(this.props.effectsDataSelectionBox.endPos,'/',{x:this.props.zoomMultiplier,y:this.props.zoomMultiplier})
+                                    );
+  }
+  if(this.props.effectsDataPseudodrag.isActive){
+    let zoomMultiplier = {x: this.props.zoomMultiplier, y: this.props.zoomMultiplier};
+    let currentScroll =  {
+                          x: this.props.appRef.current.scrollLeft,
+                          y: this.props.appRef.current.scrollTop,
+                        }
+    this.props.framesMovedRelativeSinglePosition(
+      this.props.selectedIds,
+      posOp(
+        posOp(
+          posOp({ x: eventX, y: eventY }, "/", zoomMultiplier),
+          "-",
+          posOp(this.props.effectsDataPseudodrag.startPos, "/", zoomMultiplier)
+        ),
+        "+",
+        posOp(
+          currentScroll,
+          "-",
+          this.props.effectsDataPseudodrag.initScroll
+        )
+      )
+    );
+  }
+  this.props.disableAllEffects();
+  this.props.dragEffectsClear();
+}
+
+  //tracker binding
+  clickboxHandlersDesktop={
+    onMouseDown:(e:any)=>{
+      this.mouseDown(e.pageX,e.pageY,e.offsetX,e.offsetY,e.button === 0);
+    },
+    onMouseUp:(e:any)=>{
+      this.mouseUp(e.pageX,e.pageY);
+    }
+  }
+  clickboxHandlersMobile={
+    onMouseDown:(e:TouchEvent)=>{
+      let bcr = (e.target! as HTMLElement).getBoundingClientRect();
+      let offsetX = e.targetTouches[0].clientX - bcr.x;
+      let offsetY = e.targetTouches[0].clientY - bcr.y;
+      this.mouseDown(e.changedTouches[0].pageX,e.changedTouches[0].pageY,offsetX,offsetY,true);
+    },
+    onMouseUp:(e:TouchEvent)=>{
+      this.mouseUp(e.changedTouches[0].pageX,e.changedTouches[0].pageY);
+    }
+  }
+
+   componentDidMount(){
+    (this.clickboxRef.current)!.addEventListener('mousedown', this.clickboxHandlersDesktop.onMouseDown);
+    document.addEventListener('mouseup', this.clickboxHandlersDesktop.onMouseUp);
+    
+    // (this.clickboxRef.current)!.addEventListener('touchstart', this.clickboxHandlersMobile.onMouseDown); //feature disabled on mobile
+    document.addEventListener('touchend', this.clickboxHandlersMobile.onMouseUp,{passive: true});
   }
   componentDidUpdate(prevProps:ClickboxProps){
     if(prevProps.zoomMode!==this.props.zoomMode){
@@ -817,11 +845,11 @@ class Tracker extends React.Component<TrackerProps,{}>{
   constructor(props:any){
     super(props);
   }
-  track(e:any,clientOffset:Position){
+  track(eventX:number,eventY:number,clientOffset:Position){
     if (this.props.effectsDataAll["pseudolinkEffect"].isActive) {
       this.props.effectSetEnd("pseudolinkEffect", 
       posOp(
-        { x: e.pageX, y: e.pageY-_navHeight },
+        { x: eventX, y: eventY-_navHeight },
         "+",
           {
             x: this.props.appRef.current.scrollLeft,
@@ -833,7 +861,7 @@ class Tracker extends React.Component<TrackerProps,{}>{
       this.props.effectSetEnd(
         "selectionBoxEffect",
         posOp(
-          { x: e.pageX + clientOffset.x, y: e.pageY + clientOffset.y },
+          { x: eventX + clientOffset.x, y: eventY + clientOffset.y },
           "+",
           {
             x: this.props.appRef!.current.scrollLeft,
@@ -846,7 +874,7 @@ class Tracker extends React.Component<TrackerProps,{}>{
       this.props.effectSetEnd(
         "pseudodragEffect",
         posOp(
-          { x: e.pageX, y: e.pageY },
+          { x: eventX, y: eventY },
           "+",
           posOp(
             {
@@ -865,7 +893,7 @@ class Tracker extends React.Component<TrackerProps,{}>{
         positions.push(
           posOp(
             posOp(
-              posOp({ x: e.pageX, y: e.pageY }, "/", {
+              posOp({ x: eventX, y: eventY }, "/", {
                 x: this.props.zoomMultiplier,
                 y: this.props.zoomMultiplier,
               }),
@@ -890,14 +918,15 @@ class Tracker extends React.Component<TrackerProps,{}>{
       );
     }
   }
-  onMouseMove=(e:any)=>{
-    this.track(e,{x:0,y:-_navHeight});
+  onMouseMoveDesktop=(e:any)=>{
+    this.track(e.pageY,e.pageY,{x:0,y:-_navHeight});
+  }
+  onMouseMoveMobile=(e:TouchEvent)=>{
+    this.track(e.changedTouches[0].pageX,e.changedTouches[0].pageY,{x:0,y:-_navHeight});
   }
   componentDidMount(){
-    document.addEventListener('mousemove',throttle(this.onMouseMove,10));
-  }
-  componentWillUnmount(){
-    document.removeEventListener('mousemove',throttle(this.onMouseMove,10));
+    document.addEventListener('mousemove',throttle(this.onMouseMoveDesktop,10));
+    document.addEventListener('touchmove',throttle(this.onMouseMoveMobile,10),{passive: false});
   }
   render(){
     return(false);
@@ -1353,8 +1382,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     });
   }
   componentWillUnmount(){
-    document.addEventListener('keydown',this.globalHandlers.onKeyDown);
-    
+    document.removeEventListener('keydown',this.globalHandlers.onKeyDown);
     
   }
   createLinkCallback=(fromId:number)=>{
