@@ -257,7 +257,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  handleHandlersMobile = {
   onMouseDown:(e:TouchEvent)=>{
     e.preventDefault();
-    console.log('mobileStartDrag',e.changedTouches[0].pageX,e.changedTouches[0].pageY);
     this.props.dragCallback(this.props.id,e.changedTouches[0].pageX,e.changedTouches[0].pageY);
   }
  }
@@ -265,19 +264,16 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
   onMouseDown:(e:TouchEvent)=>{
     e.preventDefault();
     if(this.props.editId!==this.props.id){
-      console.log('mobileStartPseudolink');
       this.props.pseudolinkCallback(this.props.id,{x: e.changedTouches[0].pageX,y:e.changedTouches[0].pageY-_navHeight},true);
     }
   },
   onMouseUpElement:(e:TouchEvent)=>{
-    console.log('mobileCreateLink');
     this.props.createLinkCallback(this.props.id);
   }
  }
  wrapHandlersMobile = {
     longTouchStart:()=>{
       if (!this.longTouchTimer) {
-        console.log('long start',this.longTouchTimer);
         this.longTouchTimer = setTimeout(()=>{this.setEdit(this.props.id)}, 800);
       }
     },
@@ -301,7 +297,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                           rows={3} 
                           passedRef={this.relabelRef}
                            
-                          // ref = {this.relabelRef}
                           defaultValue={this.props.text}/>
         {this.props.embedLink===null && <ControlBox_w id={this.props.id} 
         embedPopupCallback={this.props.popupCallback}/>}
@@ -341,8 +336,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                                    draggable={false}
                                    style={{
                                           verticalAlign: 'bottom',
-                                          // borderBottomLeftRadius:_borderRadius,
-                                          // borderBottomRightRadius:_borderRadius,
                                           paddingTop:_framePadding*0.6,
                                           width:this.props.embedLink.maxSizes.x,
                                           height:this.props.embedLink.maxSizes.y,
@@ -420,7 +413,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
         <ScalableDiv className={this.props.isSelected ? 'frame wrap active' : 'frame wrap'} 
                      zoomMultiplier={this.props.zoomMultiplier}
                      style={{
-                      // borderRadius:_borderRadius,
                       left:this.props.position.x,
                       top:this.props.position.y,
                      }} 
@@ -429,8 +421,6 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
                            style={{
                               marginBottom: _framePadding,
                               height:_handleHeight,
-                              // borderTopLeftRadius:_borderRadius,
-                              // borderTopRightRadius:_borderRadius,
                             }} 
                             zoomMultiplier={this.props.zoomMultiplier}
                             passedRef={this.handleRef}>
@@ -1392,7 +1382,6 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
    }
   componentDidMount(){
     document.addEventListener('keydown',this.globalHandlers.onKeyDown);
-    //embed content initial load
     this.props.framesKeys.forEach((id:number)=>{
       const frameData = this.props.framesData[id];
       if(frameData.embedLink!=null){
