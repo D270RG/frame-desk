@@ -27,6 +27,7 @@ function mapControlBoxState(state:RootState){
     zoomMultiplier: state.zoomReducer.zoomMultiplier
   }
 }
+
 let controlBoxConnector = connect(mapControlBoxState);
 interface ControlBoxProps extends ConnectedProps<typeof controlBoxConnector>{
   id:number,
@@ -148,6 +149,7 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  embedRef = React.createRef<any>();
  relabelRef = React.createRef<any>();
  textRef = React.createRef<any>();
+ longTouchTimer = undefined as any;
  constructor(props:any){
   super(props);
   this.state = {maxTextWidth:this.props.frameW}
@@ -215,9 +217,17 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
     (this.contentRef.current)!.addEventListener('touchstart', this.contentHandlersMobile.onMouseDown,{passive: false});
 
     //wrap box binding
-    (this.wrapRef.current)!.addEventListener('dblclick', this.wrapHandlers.onDoubleClick);
+    (this.wrapRef.current)!.addEventListener('dblclick', this.wrapHandlersDesktop.onDoubleClick);
+    (this.wrapRef.current)!.addEventListener('touchstart', this.wrapHandlersMobile.longTouchStart);
+    (this.wrapRef.current)!.addEventListener('touchend', this.wrapHandlersMobile.longTouchEnd);
 
     this.resize(null);
+ }
+ //general use
+ setEdit(editId:null|number){
+  if(editId!==null){
+    this.props.frameSetEdit(editId);              
+  }
  }
  //desktop
  handleHandlersDesktop = {
@@ -238,6 +248,11 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
     this.props.createLinkCallback(this.props.id);
   }
  }
+ wrapHandlersDesktop = {
+  onDoubleClick:(e:MouseEvent)=>{
+    this.setEdit(this.props.id);
+  }
+}
  //mobile
  handleHandlersMobile = {
   onMouseDown:(e:TouchEvent)=>{
@@ -259,14 +274,21 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
     this.props.createLinkCallback(this.props.id);
   }
  }
- //universal
- wrapHandlers = {
-    onDoubleClick:(e:MouseEvent)=>{
-      if(this.props.editId===null){
-        this.props.frameSetEdit(this.props.id);              
+ wrapHandlersMobile = {
+    longTouchStart:()=>{
+      if (!this.longTouchTimer) {
+        console.log('long start',this.longTouchTimer);
+        this.longTouchTimer = setTimeout(()=>{this.setEdit(this.props.id)}, 800);
+      }
+    },
+    longTouchEnd:()=>{
+      if (this.longTouchTimer) {
+        clearTimeout(this.longTouchTimer);
+        this.longTouchTimer = undefined;
       }
     }
- }
+}
+
  renderText(){
   if(this.props.editId===this.props.id){
     return(
@@ -512,9 +534,6 @@ class Line extends React.Component<LineProps,{}>{
   }
   componentDidMount(){
     (this.ref.current as HTMLElement)!.addEventListener('dblclick',this.onDoubleClick);
-  }
-  componentWillUnmount(){
-    (this.ref.current as HTMLElement)!.removeEventListener('dblclick',this.onDoubleClick);
   }
   render(){
     return(
