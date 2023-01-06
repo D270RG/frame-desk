@@ -69,6 +69,7 @@ const overlayEffectsInitialState = {
           endPos:{x:0,y:0}
         },
         dragEffect:{
+          isActive:false,
           data:{
             // 0:{
             //   startPos:{x:0,y:0},
@@ -148,6 +149,7 @@ const overlayEffectsSlice = createSlice({
       state.effects!.data['pseudodragEffect'].initScroll = action.payload.initScroll
     },
     dragEffectAdded:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['dragEffect'].isActive = true;
       state.effects!.data['dragEffect'].data[action.payload.id as number] = {
         startPos:action.payload.startPos,
         endPos:action.payload.endPos,
@@ -165,6 +167,7 @@ const overlayEffectsSlice = createSlice({
       state.effects!.data['dragEffect'].data[action.payload.id as number].initScroll = action.payload.initScroll
     },
     dragEffectsClear:(state, action:PayloadAction<OverlayEffectPayload>)=>{
+      state.effects!.data['dragEffect'].isActive = false;
       state.effects!.data['dragEffect'].keys.length = 0;
       state.effects!.data['dragEffect'].data = {};
     },

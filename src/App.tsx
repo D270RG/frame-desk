@@ -137,6 +137,7 @@ interface FrameProps extends ConnectedProps<typeof frameConnector>{
   frameW:number,
   isSelected:boolean,
   dragCallback:(fromId: number, eventX: number, eventY: number) => void,
+  checkDrag:()=>boolean,
   createLinkCallback:(fromId: number) => void,
   popupCallback:(isVisible: boolean, id: number) => void,
   pseudolinkCallback:(id:number,eventPos:Position,state:boolean)=>void
@@ -273,12 +274,12 @@ class Frame extends React.Component<FrameProps,{maxTextWidth:number}>{
  }
  wrapHandlersMobile = {
     longTouchStart:()=>{
-      if (!this.longTouchTimer) {
+      if (!this.longTouchTimer && !this.props.checkDrag()) {
         this.longTouchTimer = setTimeout(()=>{this.setEdit(this.props.id)}, 800);
       }
     },
     longTouchEnd:()=>{
-      if (this.longTouchTimer) {
+      if (this.longTouchTimer && !this.props.checkDrag()) {
         clearTimeout(this.longTouchTimer);
         this.longTouchTimer = undefined;
       }
@@ -928,7 +929,7 @@ class Tracker extends React.Component<TrackerProps,{}>{
     }
   }
   onMouseMoveDesktop=(e:any)=>{
-    this.track(e.pageY,e.pageY,{x:0,y:-_navHeight});
+    this.track(e.pageX,e.pageY,{x:0,y:-_navHeight});
   }
   onMouseMoveMobile=(e:TouchEvent)=>{
     this.track(e.changedTouches[0].pageX,e.changedTouches[0].pageY,{x:0,y:-_navHeight});
@@ -1110,7 +1111,8 @@ function mapAppState(state:RootState){
     zoomMode: state.zoomReducer.zoomMode,
     zoomMultiplier: state.zoomReducer.zoomMultiplier,
 
-    pseudodragActive: state.overlayEffectsReducer.effects.data.pseudodragEffect.isActive
+    pseudodragActive: state.overlayEffectsReducer.effects.data.pseudodragEffect.isActive,
+    dragActive: state.overlayEffectsReducer.effects.data.dragEffect.isActive
   }
 }
 const mapAppDispatch = (dispatch: RootDispatch) => ({
@@ -1412,6 +1414,13 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
     }
   }
   //drag
+  checkDrag=()=>{
+    if(this.props.dragActive || this.props.pseudodragActive){
+      return true;
+    } else {
+      return false;
+    }
+  }
   dragCallback=(fromId:number,eventXarg:number,eventYarg:number)=>{
     let eventX = eventXarg/this.props.zoomMultiplier;
     let eventY = eventYarg/this.props.zoomMultiplier;
@@ -1509,6 +1518,7 @@ class App extends React.Component<AppProps,{frameBuffer:any[],popupView:boolean,
                createLinkCallback={this.createLinkCallback}
                popupCallback={this.popupCallback}
                pseudolinkCallback={this.pseudoLinkCallback}
+               checkDrag = {this.checkDrag}
                />
       );
     });
